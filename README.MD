@@ -1,5 +1,5 @@
 # DSD Training
-## Scheduled
+## Schedule
 ![Schedule1](sched1.png)
 ![Schedule2](sched2.png)
 ## We have done...
