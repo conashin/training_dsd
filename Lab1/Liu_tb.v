@@ -7,7 +7,6 @@ module tb_Lab1_top;
     wire [7:0] out;
     integer file;
 
-    // 被測模組
     Lab1_top uut ( .X(X), .Y(Y), .sel(sel), .out(out) );
 
     initial begin
