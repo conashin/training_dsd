@@ -6,7 +6,6 @@ module tb_Lab1_top;
     reg [1:0] sel;
     wire [7:0] out;
 
-    // Instantiate the Design Under Test (DUT)
     Lab1_top uut (
         .X(X),
         .Y(Y),
