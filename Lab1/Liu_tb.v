@@ -1,53 +1,42 @@
-`timescale 1ns / 1ps
+`timescale 1ns / 1ns
 
 module tb_Lab1_top;
     reg [2:0] X;
     reg [2:0] Y;
     reg [1:0] sel;
     wire [7:0] out;
+    integer file;
 
-    Lab1_top uut (
-        .X(X),
-        .Y(Y),
-        .sel(sel),
-        .out(out)
-    );
+    // 被測模組
+    Lab1_top uut ( .X(X), .Y(Y), .sel(sel), .out(out) );
 
     initial begin
-        $dumpfile("tb_Lab1_top.vcd");
-        $dumpvars(0, tb_Lab1_top);
+        file = $fopen("Lab1_output.txt", "w");
+        if (!file) begin
+            $display("Error: Cannot open file!");
+            $finish;
+        end
 
-    
-        $monitor("Time=%0t | X=%b, Y=%b, sel=%b, out=%b (%d)", 
-                 $time, X, Y, sel, out, out);
+        test_case(3'b101, 3'b011);
+        test_case(3'b110, 3'b111);
+        test_case(3'b111, 3'b010);
 
-        // Test case (a): X1 and Y1 from student ID
-        X = 3'b101;  // X1 =5
-        Y = 3'b011;  // Y1 =3
-        
-        sel = 2'b00; #10;
-        sel = 2'b01; #10;
-        sel = 2'b10; #10;
-        sel = 2'b11; #10;
-
-        // Test case (b): X2=3’b110, Y2=3’b111
-        X = 3'b110;
-        Y = 3'b111;
-        
-        sel = 2'b00; #10;
-        sel = 2'b01; #10;
-        sel = 2'b10; #10;
-        sel = 2'b11; #10;
-
-        // Test case (c): X3=3’b111, Y3=3’b010
-        X = 3'b111;
-        Y = 3'b010;
-        
-        sel = 2'b00; #10;
-        sel = 2'b01; #10;
-        sel = 2'b10; #10;
-        sel = 2'b11; #10;
-
-        $finish;
+        $fclose(file);
+        $display("File writing complete!");
     end
+
+    task test_case(input [2:0] x_val, input [2:0] y_val);
+        begin
+            X = x_val; Y = y_val;
+            sel = 2'b00;
+
+            repeat (4) begin
+                #10;
+               $fdisplay(file, "%0t,%b,%b,%b,%b,%d", 
+                          $time, X, Y, sel, out, out);
+                sel = sel + 1'b1;
+            end
+        end
+    endtask
+
 endmodule
