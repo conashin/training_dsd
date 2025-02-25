@@ -5,9 +5,11 @@ module tb_Lab1_top;
     reg [2:0] Y;
     reg [1:0] sel;
     wire [7:0] out;
+    wire [15:0] seg7;
+    wire [1:0] seg_en;
     integer file;
 
-    Lab1_top uut ( .X(X), .Y(Y), .sel(sel), .out(out) );
+    Lab1_top uut ( .X(X), .Y(Y), .sel(sel), .out(out) , .seg7(seg7), .seg_en(seg_en) );
 
     initial begin
         file = $fopen("Lab1_output.txt", "w");
