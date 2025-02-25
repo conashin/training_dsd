@@ -36,6 +36,77 @@ int sel_11(int X, int Y) {
     return Y >> X;
 }
 
+// Function of segment 7 decoder
+// 7-segment format: a b c d e f g point
+vector<int> seg7_decoder(int num) {
+    vector<int> seg7_tmp;
+    switch (num) {
+        case 0:
+            seg7_tmp = {1, 1, 1, 1, 1, 1, 0, 0};
+            break;
+        case 1:
+            seg7_tmp = {0, 1, 1, 0, 0, 0, 0, 0};
+            break;
+        case 2:
+            seg7_tmp = {1, 1, 0, 1, 1, 0, 1, 0};
+            break;
+        case 3:
+            seg7_tmp = {1, 1, 1, 1, 0, 0, 1, 0};
+            break;
+        case 4:
+            seg7_tmp = {0, 1, 1, 0, 0, 1, 1, 0};
+            break;
+        case 5:
+            seg7_tmp = {1, 0, 1, 1, 0, 1, 1, 0};
+            break;
+        case 6:
+            seg7_tmp = {1, 0, 1, 1, 1, 1, 1, 0};
+            break;
+        case 7:
+            seg7_tmp = {1, 1, 1, 0, 0, 0, 0, 0};
+            break;
+        case 8:
+            seg7_tmp = {1, 1, 1, 1, 1, 1, 1, 0};
+            break;
+        case 9:
+            seg7_tmp = {1, 1, 1, 1, 0, 1, 1, 0};
+            break;
+        case 10: // A
+            seg7_tmp = {1, 1, 1, 0, 1, 1, 1, 0};
+            break;
+        case 11: // B
+            seg7_tmp = {0, 0, 1, 1, 1, 1, 1, 0};
+            break;
+        case 12: // C
+            seg7_tmp = {1, 0, 0, 1, 1, 1, 0, 0};
+            break;
+        case 13: // D
+            seg7_tmp = {0, 1, 1, 1, 1, 0, 1, 0};
+            break;
+        case 14: // E
+            seg7_tmp = {1, 0, 0, 1, 1, 1, 1, 0};
+            break;
+        case 15: // F
+            seg7_tmp = {1, 0, 0, 0, 1, 1, 1, 0};
+            break;
+        default:
+            seg7_tmp = {0, 0, 0, 0, 0, 0, 0, 0};
+            break;
+    }
+    return seg7_tmp;
+}
+
+
+
+// Function to convert X and Y to 7-segment format
+vector<int> seg7(int X, int Y) {
+    vector<int> seg7_tmp;
+    X = X + 2;
+    Y = 2 * Y;
+    
+    return seg7_tmp;
+}
+
 int main() {
     ifstream file("Lab1_output.txt"); // Open the txt file
     if (!file) {
