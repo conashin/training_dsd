@@ -21,7 +21,7 @@ module seg7_decoder(
         4'b1101: out = 8'b10100001; // D
         4'b1110: out = 8'b10000110; // E
         4'b1111: out = 8'b10001110; // F
-        default: out = 8'b00000000; // default 0
+        default: out = 8'b11111111; // default 0
     endcase
 
 endmodule

@@ -14,6 +14,8 @@ struct SimulationData {
     string sel;
     string out_bin;
     int out_dec;
+    string seg7;
+    int seg_en;
 };
 
 // Function for sel=00 (8X + Y)
@@ -35,68 +37,95 @@ int sel_10(int X, int Y) {
 int sel_11(int X, int Y) {
     return Y >> X;
 }
-
+/*
+        4'b0000: out = 8'b11000000; // 0
+        4'b0001: out = 8'b11111001; // 1
+        4'b0010: out = 8'b10100100; // 2
+        4'b0011: out = 8'b10110000; // 3
+        4'b0100: out = 8'b10011001; // 4
+        4'b0101: out = 8'b10010010; // 5
+        4'b0110: out = 8'b10000010; // 6
+        4'b0111: out = 8'b11111000; // 7
+        4'b1000: out = 8'b10000000; // 8
+        4'b1001: out = 8'b10010000; // 9
+        4'b1010: out = 8'b10001000; // A
+        4'b1011: out = 8'b10000011; // B
+        4'b1100: out = 8'b11000110; // C
+        4'b1101: out = 8'b10100001; // D
+        4'b1110: out = 8'b10000110; // E
+        4'b1111: out = 8'b10001110; // F
+        default: out = 8'b11111111; // default 0
+    endcase
+    */
 // Function of segment 7 decoder
-// 7-segment format: a b c d e f g point
-vector<int> seg7_decoder(int num) {
+// 7-segment format: point g f e d c b a
+vector<int> seg7(int num) {
     vector<int> seg7_tmp;
     switch (num) {
         case 0:
-            seg7_tmp = {1, 1, 1, 1, 1, 1, 0, 0};
+            seg7_tmp = {1, 1, 0, 0, 0, 0, 0, 0};
             break;
         case 1:
-            seg7_tmp = {0, 1, 1, 0, 0, 0, 0, 0};
+            seg7_tmp = {1, 1, 1, 1, 1, 0, 0, 1};
             break;
         case 2:
-            seg7_tmp = {1, 1, 0, 1, 1, 0, 1, 0};
+            seg7_tmp = {1, 0, 1, 0, 0, 0, 1, 0};
             break;
         case 3:
-            seg7_tmp = {1, 1, 1, 1, 0, 0, 1, 0};
+            seg7_tmp = {1, 0, 1, 1, 0, 0, 0, 0};
             break;
         case 4:
-            seg7_tmp = {0, 1, 1, 0, 0, 1, 1, 0};
+            seg7_tmp = {1, 0, 0, 1, 1, 0, 0, 1};
             break;
         case 5:
-            seg7_tmp = {1, 0, 1, 1, 0, 1, 1, 0};
+            seg7_tmp = {1, 0, 0, 1, 0, 0, 1, 0};
             break;
         case 6:
-            seg7_tmp = {1, 0, 1, 1, 1, 1, 1, 0};
+            seg7_tmp = {1, 0, 0, 0, 0, 0, 1, 0};
             break;
         case 7:
-            seg7_tmp = {1, 1, 1, 0, 0, 0, 0, 0};
+            seg7_tmp = {1, 1, 1, 1, 1, 0, 0, 0};
             break;
         case 8:
-            seg7_tmp = {1, 1, 1, 1, 1, 1, 1, 0};
+            seg7_tmp = {1, 0, 0, 0, 0, 0, 0, 0};
             break;
         case 9:
-            seg7_tmp = {1, 1, 1, 1, 0, 1, 1, 0};
+            seg7_tmp = {1, 0, 0, 1, 0, 0, 0, 0};
             break;
-        case 10: // A
-            seg7_tmp = {1, 1, 1, 0, 1, 1, 1, 0};
+        case 10:
+            seg7_tmp = {1, 0, 0, 0, 1, 0, 0, 0};
             break;
-        case 11: // B
-            seg7_tmp = {0, 0, 1, 1, 1, 1, 1, 0};
+        case 11:
+            seg7_tmp = {1, 0, 0, 0, 0, 0, 1, 1};
             break;
-        case 12: // C
-            seg7_tmp = {1, 0, 0, 1, 1, 1, 0, 0};
+        case 12:
+            seg7_tmp = {1, 1, 0, 0, 0, 1, 1, 0};
             break;
-        case 13: // D
-            seg7_tmp = {0, 1, 1, 1, 1, 0, 1, 0};
+        case 13:
+            seg7_tmp = {1, 1, 0, 1, 0, 0, 1, 0};
             break;
-        case 14: // E
-            seg7_tmp = {1, 0, 0, 1, 1, 1, 1, 0};
+        case 14:
+            seg7_tmp = {1, 0, 0, 0, 0, 1, 1, 0};
             break;
-        case 15: // F
-            seg7_tmp = {1, 0, 0, 0, 1, 1, 1, 0};
+        case 15:
+            seg7_tmp = {1, 0, 0, 1, 0, 1, 1, 0};
             break;
         default:
-            seg7_tmp = {0, 0, 0, 0, 0, 0, 0, 0};
+            seg7_tmp = {1, 1, 1, 1, 1, 1, 1, 1};
             break;
     }
     return seg7_tmp;
 }
 
-
+vector<int> seg7_en(int en) {
+    vector<int> seg7_en_tmp;
+    if (en == 1) {
+        seg7_en_tmp = {1, 1, 1, 1, 1, 1, 1, 0};
+    } else {
+        seg7_en_tmp = {1, 1, 1, 1, 1, 1, 1, 1};
+    }
+    return seg7_en_tmp;
+}
 
 // Function to convert X and Y to 7-segment format
 vector<int> seg7(int X, int Y) {
@@ -104,6 +133,9 @@ vector<int> seg7(int X, int Y) {
     X = X + 2;
     Y = 2 * Y;
     
+    seg7_tmp.insert(seg7_tmp.end(), seg7(Y).end(), seg7(Y).begin()); // Add Y [15:8]
+    seg7_tmp.insert(seg7_tmp.end(), seg7(X).end(), seg7(X).begin()); // Add X [7:0]
+
     return seg7_tmp;
 }
 
@@ -123,7 +155,7 @@ int main() {
     // Read the file line by line
     while (getline(file, line)) {
         istringstream iss(line);
-        string time_str, X_str, Y_str, sel, out_bin, out_dec_str;
+        string time_str, X_str, Y_str, sel, out_bin, out_dec_str, seg7_str, seg_en_str; // Output format: time, X, Y, sel, out, seg7, seg_en
         
         // Read values separated by commas
         getline(iss, time_str, ',');
@@ -131,16 +163,19 @@ int main() {
         getline(iss, Y_str, ',');
         getline(iss, sel, ',');
         getline(iss, out_bin, ',');
-        getline(iss, out_dec_str, ',');
+        getline(iss, out_dec_str, ','); // ?
+        getline(iss, seg7_str, ',');
+        getline(iss, seg_en_str, ',');
 
         // Convert values
         int time = stoi(time_str);
         int X = stoi(X_str, nullptr, 2); // Convert binary string to int
         int Y = stoi(Y_str, nullptr, 2); // Convert binary string to int
         int out_dec = stoi(out_dec_str);
+        int seg_en = stoi(seg_en_str);
 
         // Store parsed data
-        data.push_back({time, X, Y, sel, out_bin, out_dec});
+        data.push_back({time, X, Y, sel, out_bin, out_dec, seg7_str, seg_en});
     }
 
     file.close();

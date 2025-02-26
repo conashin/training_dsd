@@ -33,8 +33,8 @@ module tb_Lab1_top;
 
             repeat (4) begin
                 #10;
-               $fdisplay(file, "%0t,%b,%b,%b,%b,%d", 
-                          $time, X, Y, sel, out, out);
+               $fdisplay(file, "%0t,%b,%b,%b,%b,%d,%b,%b", 
+                          $time, X, Y, sel, out, seg7, seg_en);
                 sel = sel + 1'b1;
             end
         end
