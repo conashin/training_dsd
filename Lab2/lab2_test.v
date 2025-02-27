@@ -27,6 +27,7 @@ module LED_Controller (
     output reg [15:0] LED // 16 顆 LED
 );
     reg [3:0] position;   // LED 當前位置
+  reg [3:0] init_pos;
     wire move_mode;       // 0: 移動 1 顆 LED, 1: 移動 2 顆 LED
     wire light_mode;      // 0: 亮燈模式, 1: 熄滅模式
 
@@ -36,11 +37,12 @@ module LED_Controller (
     always @(posedge clk or posedge SW[0]) begin
         if (SW[0]) begin // Reset
             LED <= (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
-            position <= SW[6:3];
+            init_pos <= SW[6:3];
+          	position <= SW[6:3];
         end else begin
             // 讓 LED 依據當前位置持續點亮
             LED = (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
-            for (integer i = 0; i <= position; i = i + 1) begin
+            for (integer i = init_pos; i <= position; i = i + 1) begin
                 LED[i] = (light_mode) ? 0 : 1;
                 position <= (position + (move_mode ? 2 : 1)) % 16;
             end
