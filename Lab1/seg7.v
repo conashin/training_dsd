@@ -24,7 +24,7 @@ module seg7_digit_decoder(input [3:0] in, // Convert 4-bit binary to 7-segment d
     localparam SEG_L     = 8'b00111000; // "L" (dp=0, g=0, f=1, e=1, d=1, c=0, b=0, a=0)
 
     always @(*) begin
-        case (in)
+        case (in) // Convert to common anode 7-segment display
             4'h0: seg_out = ~SEG_0; // 0
             4'h1: seg_out = ~SEG_1; // 1
             4'h2: seg_out = ~SEG_2; // 2
@@ -46,7 +46,8 @@ module seg7_digit_decoder(input [3:0] in, // Convert 4-bit binary to 7-segment d
     end
 endmodule
 
-module seg7_display(input [31:0] in, // digits to show
+module seg7_display(input clk;
+                    input [31:0] in, // digits to show
                     input [7:0] seg_en_digit_in, // setup which digit to show
                     output reg [7:0] seg_en_digit, // enable 7-segment display for DN0-1_K1-4; DN1_K4, DN1_K3, DN1_K2, DN1_K1, DN0_K4, DN0_K3, DN0_K2, DN0_K1
                     output reg [7:0] DN0, // 7-segment display for DN0_K1-4, p(point)gfedcba
@@ -63,28 +64,54 @@ module seg7_display(input [31:0] in, // digits to show
     seg7_digit_decoder DN1_K3(.in(in[27:24]), .seg_out(seg7_dp_out[55:48])); // DK1_K3, DK7
     seg7_digit_decoder DN1_K4(.in(in[31:28]), .seg_out(seg7_dp_out[63:56])); // DK1_K4, DK8
 
-    always @(*) begin
-        case (seg_en_digit_in)
-            8'b11111110: seg_en_digit = 8'b11111110; // DK0_K1
-            8'b11111101: seg_en_digit = 8'b11111101; // DK0_K2
-            8'b11111011: seg_en_digit = 8'b11111011; // DK0_K3
-            8'b11110111: seg_en_digit = 8'b11110111; // DK0_K4
-            8'b11101111: seg_en_digit = 8'b11101111; // DK1_K1
-            8'b11011111: seg_en_digit = 8'b11011111; // DK1_K2
-            8'b10111111: seg_en_digit = 8'b10111111; // DK1_K3
-            8'b01111111: seg_en_digit = 8'b01111111; // DK1_K4
-            default: seg_en_digit = 8'b11111111; // default off
-        endcase
-        case (seg_en_digit)
-            8'b11111110: DN0 = seg7_dp_out[7:0]; // DK0_K1
-            8'b11111101: DN0 = seg7_dp_out[15:8]; // DK0_K2
-            8'b11111011: DN0 = seg7_dp_out[23:16]; // DK0_K3
-            8'b11110111: DN0 = seg7_dp_out[31:24]; // DK0_K4
-            8'b11101111: DN1 = seg7_dp_out[39:32]; // DK1_K1
-            8'b11011111: DN1 = seg7_dp_out[47:40]; // DK1_K2
-            8'b10111111: DN1 = seg7_dp_out[55:48]; // DK1_K3
-            8'b01111111: DN1 = seg7_dp_out[63:56]; // DK1_K4
-            default: DN0 = 8'b11111111; DN1 = 8'b11111111; // default off
+    reg [2:0] digit_select; // 3-bit counter for 8 digits
+
+    always @(posedge clk) begin
+        // Increment the counter (cycles 0-7)
+        digit_select <= digit_select + 1;
+
+        // Select the active digit and output the data
+        case (digit_select)
+            3'b000: begin // DK0_K1
+                seg_en_digit <= 8'b11111110;
+                DN0 <= seg7_dp_out[7:0];
+                DN1 <= 8'b11111111; // Turn off other segments
+            end
+            3'b001: begin // DK0_K2
+                seg_en_digit <= 8'b11111101;
+                DN0 <= seg7_dp_out[15:8];
+                DN1 <= 8'b11111111;
+            end
+            3'b010: begin // DK0_K3
+                seg_en_digit <= 8'b11111011;
+                DN0 <= seg7_dp_out[23:16];
+                DN1 <= 8'b11111111;
+            end
+            3'b011: begin // DK0_K4
+                seg_en_digit <= 8'b11110111;
+                DN0 <= seg7_dp_out[31:24];
+                DN1 <= 8'b11111111;
+            end
+            3'b100: begin // DK1_K1
+                seg_en_digit <= 8'b11101111;
+                DN1 <= seg7_dp_out[39:32];
+                DN0 <= 8'b11111111;
+            end
+            3'b101: begin // DK1_K2
+                seg_en_digit <= 8'b11011111;
+                DN1 <= seg7_dp_out[47:40];
+                DN0 <= 8'b11111111;
+            end
+            3'b110: begin // DK1_K3
+                seg_en_digit <= 8'b10111111;
+                DN1 <= seg7_dp_out[55:48];
+                DN0 <= 8'b11111111;
+            end
+            3'b111: begin // DK1_K4
+                seg_en_digit <= 8'b01111111;
+                DN1 <= seg7_dp_out[63:56];
+                DN0 <= 8'b11111111;
+            end
         endcase
     end
 endmodule
