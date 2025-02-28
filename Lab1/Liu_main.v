@@ -2,8 +2,6 @@ module seg7_decoder(
     input [3:0] in,
     output [7:0] out // p(point)gfedcba
 );
-
-    assign out = 8'b00000000;
     case (in)
         4'b0000: out = 8'b11000000; // 0
         4'b0001: out = 8'b11111001; // 1
@@ -21,7 +19,7 @@ module seg7_decoder(
         4'b1101: out = 8'b10100001; // D
         4'b1110: out = 8'b10000110; // E
         4'b1111: out = 8'b10001110; // F
-        default: out = 8'b11111111; // default 0
+        default: out = 8'b11111111; // default off
     endcase
 
 endmodule
@@ -30,35 +28,37 @@ module Lab1_top (
     input  [2:0] X,
     input  [2:0] Y,
     input  [1:0] sel, // Which is LSB? sel[1] or sel[0]?
+    input rst,
     output reg [7:0] out, 
-    output [15:0] seg7, // Two 7-segment displays seg7[15:8] pgfedcba, seg7[7:0] pgfedcba
-    output [1:0] seg_en // Select which 7-segment display to enable, [1] for seg7[15:8], [0] for seg7[7:0]
+    output [15:0] seg7, // Two 7-segment displays seg7[15:8] pgfedcba for DK1, seg7[7:0] pgfedcba for DK0
+    output [7:0] seg_en // Select which 7-segment display to enable, 8 seg7 in Total, only use seg_en[1] and seg_en[0] for DK1 DK0
 );
 
     wire [3:0] numx, numy;
     assign numx = X + 3'b010; // X + 2
     assign numy = Y << 1; // 2 * Y
 
-    seg7_decoder seg7_0(.in(numx), .out(seg7[7:0]));
-    seg7_decoder seg7_1(.in(numy), .out(seg7[15:8]));
+    seg7_decoder seg7_0(.in(numx), .out(seg7[7:0])); // X display on DK0
+    seg7_decoder seg7_1(.in(numy), .out(seg7[15:8])); // Y display on DK1
 
     always @(*) begin
-        case (sel)
-            2'b00: out = (X << 3) + Y;   // binary representation of 8X + Y
-            2'b01: out = (Y << 4) + X;   // binary representation of 16Y + X
-            2'b10: out = X << Y;         // Logic shift left X by Y bits
-            2'b11: out = Y >> X;         // Logic shift right Y by X bits
-            default: out = 8'b00000000;  // default 0
-        endcase
-        
-        case (sel[1])
-            1'b0: seg_en[1] = 1'b0; // Enable seg7[7:0]
-            1'b1: seg_en[1] = 1'b1; // Enable seg7[15:8]
-            default: seg_en[1] = 1'b0; // default 0
-        endcase
-        
+        if (rst) begin
+            seg_en <= 8'b11111111;
+        end else begin
+            case (sel)
+                2'b00: out = (X << 3) + Y;   // binary representation of 8X + Y
+                2'b01: out = (Y << 4) + X;   // binary representation of 16Y + X
+                2'b10: out = X << Y;         // Logic shift left X by Y bits
+                2'b11: out = Y >> X;         // Logic shift right Y by X bits
+                default: out = 8'b00000000;  // default 0
+            endcase
+            
+            case (sel[1]) // sel[1] = 1, enable DK0; sel[1] = 0, enable DK1 
+                1'b0: seg_en = 8'b11111101; // DK1
+                1'b1: seg_en = 8'b11111110; // DK0
+                default: seg_en = 8'b11111111; // default off
+            endcase
+        end
     end
-
-
 
 endmodule
