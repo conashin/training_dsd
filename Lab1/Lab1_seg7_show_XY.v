@@ -9,11 +9,10 @@ module Lab1_top (
 );
 
     reg [7:0] result;
-    reg [3:0] ones, tens, hundreds;
     reg [15:0] clk_divider; // 用於降低刷新頻率
     reg [1:0] refresh_counter; // 用於多工切換 (0~2)
-    
-    wire [6:0] seg_hundreds, seg_tens, seg_ones; // 7 段顯示解碼輸出
+
+    wire [6:0] seg_x, seg_y; // 修正为 wire
 
     // 計算結果
     always @(*) begin
@@ -25,17 +24,7 @@ module Lab1_top (
             default: result = 8'b00000000;
         endcase
         LED = result; 
-        
-        // 計算百位、十位、個位
-        hundreds = result / 100;
-        tens = (result % 100) / 10;
-        ones = result % 10;
     end
-
-    // 7 段顯示解碼
-    SevenSegDecoder decoder_hundreds (.num(hundreds), .seg(seg_hundreds));
-    SevenSegDecoder decoder_tens (.num(tens), .seg(seg_tens));
-    SevenSegDecoder decoder_ones (.num(ones), .seg(seg_ones));
 
     // **時鐘分頻器: 降低掃描速度**
     always @(posedge clk) begin
@@ -43,30 +32,27 @@ module Lab1_top (
     end
 
     // **刷新計數器: 降低顯示更新頻率**
-    always @(posedge clk_divider[15]) begin // 50MHz / 2^15 ? 1.5kHz (約 0.7ms)
+    always @(posedge clk_divider[15]) begin
         refresh_counter <= refresh_counter + 1;
     end
 
-    // **透過多工控制 seg 和 an，並在切換前先熄滅**
+    // **调用 7 段顯示解碼器**
+    SevenSegDecoder dec_x (.num({1'b0, X}), .seg(seg_x)); // 扩展至 4-bit
+    SevenSegDecoder dec_y (.num({1'b0, Y}), .seg(seg_y)); // 扩展至 4-bit
+
+    // **透過多工控制 seg 和 an**
     always @(*) begin
-        case (refresh_counter)
+        case (refresh_counter[1:0])
             2'b00: begin
-                seg = 7'b0000000; // 先熄滅，避免殘影
-                an = 4'b0100; // 啟用百位數顯示
-                seg = seg_hundreds;
+                an = 4'b0010; // 选择 X
+                seg = seg_x;
             end
             2'b01: begin
-                seg = 7'b0000000;
-                an = 4'b0010; // 啟用十位數顯示
-                seg = seg_tens;
-            end
-            2'b10: begin
-                seg = 7'b0000000;
-                an = 4'b0001; // 啟用個位數顯示
-                seg = seg_ones;
+                an = 4'b0001; // 选择 Y
+                seg = seg_y;
             end
             default: begin
-                an = 4'b0000; // 預設關閉所有顯示器
+                an = 4'b0000; // 关闭所有显示器
                 seg = 7'b0000000;
             end
         endcase
