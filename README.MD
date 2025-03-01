@@ -5,7 +5,7 @@
 ## We have done...
 |      Item       | Done? | Last Update |
 | :-------------: | :---: | ----------- |
-|      Lab1       |       |             |
+|      Lab1       |   V   |  20250301   |
 |      Lab2       |       |             |
 | HDLBits– Medium |       |             |
 |      Lab3       |       |             |
