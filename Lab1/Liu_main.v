@@ -1,24 +1,29 @@
 `include "seg7.v"
+`include "divider1khz.v"
     
 module Lab1_top (
     input  [2:0] X,
     input  [2:0] Y,
     input  [1:0] sel, // sel[1] LSB
     input rst,
+    input clk,
     output reg [7:0] out,
-    output [15:0] seg7, // Two 7-segment displays seg7[15:8] pgfedcba for DK1, seg7[7:0] pgfedcba for DK0
+    output [7:0] DN0,
+    output [7:0] DN1,
     output reg [7:0] seg_en // Select which 7-segment display to enable, 8 seg7 in Total, only use seg_en[1] and seg_en[0] for DK1 DK0
     );
     
+    wire clk_1khz;
     wire [3:0] numx, numy;
+    wire [39:0] seg7_data;
     wire [7:0] dummy;
     assign numx = X + 3'b010; // X + 2
     assign numy = Y << 1; // 2 * Y
+    assign seg7_data = {6{5'h10}, {sel[1]}, numx, {~sel[1]}, numy}; // Provide 6-digits BLANK and 2-digits data with sel[1] control enable
+
+    div_1khz div1khz(.clk_in(clk), .rst_n(~rst), .clk_out(clk_1khz));
+    seg7_display seg7(.clk(clk_1khz), .in(seg7_data), .DN0(DN0), .DN1(DN1), .seg_en(seg_en));
     
-    //seg7_decoder seg7_0(.in(numx), .seg_out(seg7[7:0])); // X display on DK0
-    //seg7_decoder seg7_1(.in(numy), .seg_out(seg7[15:8])); // Y display on DK1
-    seg7_display seg7_0(.in(numx), .seg_out(seg7[7:0]), .seg_en_digit_in(seg_en[0]), .DN0(seg7[7:0]), .DN1(seg7[15:8]));
-    seg7_display seg7_1(.in(numy), .seg_out(seg7[15:8]), .seg_en_digit_in(seg_en[1]), .DN0(seg7[7:0]), .DN1(seg7[15:8]));
     
     always @(*) begin
         if (rst) begin
