@@ -1,5 +1,3 @@
-`timescale 1ns/1ps
-
 module div_1khz(input clk_in,
             input rst_n,
             output reg clk_out = 0);

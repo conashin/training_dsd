@@ -24,29 +24,29 @@ module seg7_digit_decoder(input [4:0] in, // Convert 5-bit binary to 7-segment d
     localparam SEG_L     = 8'b00111000; // "L" (dp=0, g=0, f=1, e=1, d=1, c=0, b=0, a=0)
 
     always @(*) begin
-        case (in) // Convert to common anode 7-segment display
-            5'h0: seg_out = ~SEG_0; // 0
-            5'h1: seg_out = ~SEG_1; // 1
-            5'h2: seg_out = ~SEG_2; // 2
-            5'h3: seg_out = ~SEG_3; // 3
-            5'h4: seg_out = ~SEG_4; // 4
-            5'h5: seg_out = ~SEG_5; // 5
-            5'h6: seg_out = ~SEG_6; // 6
-            5'h7: seg_out = ~SEG_7; // 7
-            5'h8: seg_out = ~SEG_8; // 8
-            5'h9: seg_out = ~SEG_9; // 9
-            5'hA: seg_out = ~SEG_A; // A
-            5'hB: seg_out = ~SEG_B; // b
-            5'hC: seg_out = ~SEG_C; // C
-            5'hD: seg_out = ~SEG_D; // d
-            5'hE: seg_out = ~SEG_E; // E
-            5'hF: seg_out = ~SEG_F; // F
-            5'h10: seg_out = ~SEG_BLANK; // Blank
-            5'h11: seg_out = ~SEG_DASH; // Dash
-            5'h12: seg_out = ~SEG_ERROR; // Error
-            5'h13: seg_out = ~SEG_H; // H
-            5'h14: seg_out = ~SEG_L; // L
-            default: seg_out = ~SEG_BLANK; // default off
+        case (in) // Convert to common cathode 7-segment display
+            5'h0: seg_out = SEG_0; // 0
+            5'h1: seg_out = SEG_1; // 1
+            5'h2: seg_out = SEG_2; // 2
+            5'h3: seg_out = SEG_3; // 3
+            5'h4: seg_out = SEG_4; // 4
+            5'h5: seg_out = SEG_5; // 5
+            5'h6: seg_out = SEG_6; // 6
+            5'h7: seg_out = SEG_7; // 7
+            5'h8: seg_out = SEG_8; // 8
+            5'h9: seg_out = SEG_9; // 9
+            5'hA: seg_out = SEG_A; // A
+            5'hB: seg_out = SEG_B; // b
+            5'hC: seg_out = SEG_C; // C
+            5'hD: seg_out = SEG_D; // d
+            5'hE: seg_out = SEG_E; // E
+            5'hF: seg_out = SEG_F; // F
+            5'h10: seg_out = SEG_BLANK; // Blank
+            5'h11: seg_out = SEG_DASH; // Dash
+            5'h12: seg_out = SEG_ERROR; // Error
+            5'h13: seg_out = SEG_H; // H
+            5'h14: seg_out = SEG_L; // L
+            default: seg_out = SEG_BLANK; // default off
         endcase
     end
 endmodule
