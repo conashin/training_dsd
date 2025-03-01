@@ -51,7 +51,7 @@ module seg7_digit_decoder(input [4:0] in, // Convert 5-bit binary to 7-segment d
     end
 endmodule
 
-module seg7_display(input clk;
+module seg7_display(input clk, 
                     input [39:0] in, // digits to show (hex with 1-bit extended)
                     output reg [7:0] seg_en_digit, // enable 7-segment display for DN0-1_K1-4; DN1_K4, DN1_K3, DN1_K2, DN1_K1, DN0_K4, DN0_K3, DN0_K2, DN0_K1
                     output reg [7:0] DN0, // 7-segment display for DN0_K1-4, p(point)gfedcba
