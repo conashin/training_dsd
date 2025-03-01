@@ -4,8 +4,8 @@ module Lab1_top (input [2:0] X,
                  input [2:0] Y,
                  input [1:0] sel,      // sel[1] LSB
                  output reg [7:0] out,
-                 output [6:0] DN0,
-                 output [7:0] seg_en); // Select which 7-segment display to enable, 8 seg7 in Total, only use seg_en[1] and seg_en[0] for DK1 DK0
+                 output reg [6:0] DN0,
+                 output reg [7:0] seg_en); // Select which 7-segment display to enable, 8 seg7 in Total, only use seg_en[1] and seg_en[0] for DK1 DK0
     
     wire [3:0] numx, numy;
     wire [6:0] seg_digit_x, seg_digit_y;
@@ -24,9 +24,14 @@ module Lab1_top (input [2:0] X,
             default: out = 8'b00000000;  // default 0
         endcase
         case (sel[1])
-            1'b0: seg_en = 8b'01000000; DN0 = seg_digit_y; // Show Y on DK2
-            1'b1: seg_en = 8b'10000000; DN0 = seg_digit_x; // Show X on DK1
-            default: seg_en = 8b'00000000; // Show nothing
+            1'b0: seg_en = 8'b01000000; // Show Y on DK2
+            1'b1: seg_en = 8'b10000000; // Show X on DK1
+            default: seg_en = 8'b00000000; // Show nothing
+        endcase
+        case (sel[1])
+            1'b0: DN0 = seg_digit_y; // Show Y on DK2
+            1'b1: DN0 = seg_digit_x; // Show X on DK1
+            default: DN0 = 7'b0000000; // Show nothing
         endcase
     end
     
