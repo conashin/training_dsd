@@ -6,11 +6,35 @@ module Top_Module (
 );
     wire slow_clk;       // 分頻後的時鐘
 
+    wire [3:0] DK1, DK2, DK3, DK4; // 4-bit 7-segment display
+
+    assign DK1 = SW[6:3];
+    
+
     // 實例化時鐘分頻模組
     clock_divider clk_div (
         .clk(clk),
         .speed(SW[1]),
         .slow_clk(slow_clk)
+    );
+    
+    wire clk_1khz;
+    // 1kHz Clock for 7-segment display
+    div_1khz div_1khz (
+        .clk_in(clk),
+        // .rst_n(SW[0]),
+        .clk_out(clk_1khz)
+    );
+
+    // 7-segment display
+    seg7 seg7 (
+        .clk_1khz(clk_1khz),
+        .DK1(DK1),
+        .DK2(DK2),
+        .DK3(DK3),
+        .DK4(DK4),
+        .seg(seg7_DN0),
+        .an()
     );
 
     // 實例化 LED 控制模組
@@ -28,7 +52,7 @@ module LED_Controller (
     output reg [15:0] LED // 16 顆 LED
 );
     reg [3:0] position;   // LED 當前位置
-  reg [3:0] init_pos;
+    reg [3:0] init_pos;
     wire move_mode;       // 0: 移動 1 顆 LED, 1: 移動 2 顆 LED
     wire light_mode;      // 0: 亮燈模式, 1: 熄滅模式
 
@@ -75,15 +99,15 @@ endmodule
 
 
 module div_1khz (input clk_in,
-                input rst_n,
+                // input rst_n,
                 output reg clk_out = 0
 ); // 1khz Clock for Seg7
     
     parameter dividerCounter = 100000; // 100000000 / 1000 = 100000
     reg[1:0] Counter;
     
-    always @(posedge clk_in or negedge rst_n) begin
-        if (!rst_n) begin
+    always @(posedge clk_in) begin
+        if (1) begin
             Counter <= 0;
             end else begin
             if (Counter == (dividerCounter - 1)) begin
@@ -94,8 +118,8 @@ module div_1khz (input clk_in,
         end
     end
     
-    always @(posedge clk_in or negedge rst_n) begin
-        if (!rst_n) begin
+    always @(posedge clk_in) begin
+        if (1) begin
             clk_out <= 1'b0;
             end else begin
             if (Counter < (dividerCounter / 2)) begin
