@@ -2,14 +2,14 @@ module Top_Module (
     input [7:0] SW,      // 8-bit 控制開關
     input clk,           // 100MHz FPGA 時鐘
     output [15:0] LED,    // 16 顆 LED
-    output [6:0] seg7_DN0    // 7-segment display
+    output [6:0] seg7_DN0    // 7-segment display 6to0 are gfedcba
 );
     wire slow_clk, clk_1khz;       // 分頻後的時鐘
     // wire [3:0] LEDState;       // LED 狀態 (Direct to DK2)
 
 
     wire [3:0] DK1, DK2, DK3, DK4; // 4-bit 7-segment display
-    assign DK1 = SW[6:3];
+    assign DK1 = SW[6:3];   
     assign DK3 = 4'b0000;
     assign DK4 = 4'b0000;
 
@@ -49,35 +49,35 @@ module Top_Module (
 endmodule
 
 module LED_Controller (
-    input [7:0] SW,       // 8-bit 控制開關
+    input [7:0] SW,        // 8-bit 控制開關
     input clk,            // 來自 clock_divider 的慢時鐘
     output reg [15:0] LED, // 16 顆 LED
     output reg [3:0] position // LED 當前位置 (範圍: 0~15)
 );
-    // reg [3:0] position;   // LED 當前位置 (範圍: 0~15)
-    wire move_mode;       // 0: 移動 1 顆 LED, 1: 移動 2 顆 LED
-    wire light_mode;      // 0: 亮燈模式, 1: 熄滅模式
 
-    assign move_mode  = SW[2];     // 移動模式
-    assign light_mode = SW[7];     // 亮滅模式
+    wire move_mode;      // 0: 移動 1 顆 LED, 1: 移動 2 顆 LED
+    wire light_mode;     // 0: 亮燈模式, 1: 熄滅模式
+
+    assign move_mode  = SW[2];    // 移動模式
+    assign light_mode = SW[7];    // 亮滅模式
 
     always @(posedge clk or posedge SW[0]) begin
         if (SW[0]) begin // Reset
             // *重置 LED 狀態*
-            LED = (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
-            position = SW[6:3];  // 設置初始 LED 位置
-            LED[position] = (light_mode) ? 1'b0 : 1'b1;
+            LED      = (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
+            position = 4'b0000;  // 設置初始 LED 位置為 0
+            LED[0]   = (light_mode) ? 1'b0 : 1'b1; // 只設置第一個 LED
         end else begin
-            // *累積 LED 亮燈狀態*
+            // *更新 LED 亮燈狀態*
             LED[position] <= (light_mode) ? 1'b0 : 1'b1;
 
             // **更新 position**
             position <= (position + (move_mode ? 2 : 1)) & 4'hF;
 
-            // **當 position 走完 16 個 LED，重置 LED**
-            if (position == SW[6:3]) begin
+            // **當 position 變為 0，表示走完一圈，重置 LED**
+            if (position == 4'b0000) begin
                 LED = (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
-                LED[position] = (light_mode) ? 1'b0 : 1'b1;
+                 LED[0]   = (light_mode) ? 1'b0 : 1'b1;// 只設置第一個 LED
             end
         end
     end
@@ -91,7 +91,9 @@ module clock_divider (
     reg [31:0] counter;
     wire [31:0] max_count;
 
-    assign max_count = (speed) ? 50_000_000 : 100_000_000;
+    localparam [31:0] MAX_COUNT_1HZ  = 100_000_000;
+    localparam [31:0] MAX_COUNT_2HZ = 50_000_000;
+    assign max_count = (speed) ? MAX_COUNT_2HZ : MAX_COUNT_1HZ;
 
     always @(posedge clk) begin
         if (counter == max_count / 2 - 1) begin
@@ -140,7 +142,7 @@ endmodule
 
 module seg7_digit_decoder (input [3:0] in, // Convert 5-bit binary to 7-segment display
                           output reg [6:0] seg_out
-); // p(point)gfedcba, output single 7-segment digits signal
+); // gfedcba, output single 7-segment digits signal
 
     localparam SEG_0     = 7'b0111111; // "0" (g=1, f=1, e=1, d=1, c=1, b=1, a=1)
     localparam SEG_1     = 7'b0000110; // "1" (g=0, f=0, e=0, d=0, c=1, b=1, a=0)
