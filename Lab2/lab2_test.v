@@ -9,9 +9,9 @@ module Top_Module (
 
 
     wire [3:0] DK1, DK2, DK3, DK4; // 4-bit 7-segment display
-
     assign DK1 = SW[6:3];
-    
+    assign DK3 = 4'b0000;
+    assign DK4 = 4'b0000;
 
     // 實例化時鐘分頻模組
     clock_divider clk_div (
@@ -110,7 +110,7 @@ module div_1khz(
 ); // 1kHz降解訊號From elements
     
     parameter dividerCounter = 100000; // 100000000 / 1000 = 100000
-    reg[1:0] Counter;
+    reg[16:0] Counter;
     
     always @(posedge clk_in or negedge rst_n) begin
         if (!rst_n) begin
@@ -214,17 +214,18 @@ module seg7 (input clk_1khz, // 輸入降解訊號
         .seg_out(seg_DK2)
     );
 
-    seg7_digit_decoder decoder3 (
+    /*seg7_digit_decoder decoder3 (
         .in(DK3),
         .seg_out(seg_DK3)
-    );
+    );*/
 
-    seg7_digit_decoder decoder4 (
+    /*seg7_digit_decoder decoder4 (
         .in(DK4),
         .seg_out(seg_DK4)
-    );
+    );*/
 
     always @(*) begin
+        seg = 7'b0000000; // 預設關閉所有顯示器
         case (refresh_counter)
             2'b00: begin
                 seg = 7'b0000000; // 先熄滅，避免殘影
@@ -236,7 +237,7 @@ module seg7 (input clk_1khz, // 輸入降解訊號
                 an = 4'b0100; // 啟用DN0_K2
                 seg = seg_DK2;
             end
-            2'b10: begin    
+            /* 2'b10: begin    
                 seg = 7'b0000000;
                 an = 4'b0010; // 啟用DN0_K3
                 seg = seg_DK3;
@@ -245,11 +246,7 @@ module seg7 (input clk_1khz, // 輸入降解訊號
                 seg = 7'b0000000;
                 an = 4'b0001; // 啟用DN0_K4(左側4位最右)
                 seg = seg_DK4;
-            end
-            default: begin
-                an = 4'b0000; // 預設關閉所有顯示器
-                seg = 7'b0000000;
-            end
+            end */
         endcase
     end
 endmodule
