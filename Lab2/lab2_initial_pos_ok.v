@@ -37,24 +37,30 @@ module LED_Controller (
         if (SW[0]) begin // Reset
             // *重置 LED 狀態*
             LED = (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
-            position 
-            = SW[6:3];  // 設置初始 LED 位置
+            position = SW[6:3];  // 設置初始 LED 位置
             LED[position] = (light_mode) ? 1'b0 : 1'b1;
+            if (move_mode) 
+                LED[(position + 1) & 4'hF] = (light_mode) ? 1'b0 : 1'b1;
         end else begin
-            // *累積 LED 亮燈狀態*
-            LED[position] <= (light_mode) ? 1'b0 : 1'b1;
+            // **亮燈模式**
+            LED[position] = (light_mode) ? 1'b0 : 1'b1;
+            if (move_mode)
+                LED[(position + 1) & 4'hF] = (light_mode) ? 1'b0 : 1'b1;
 
             // **更新 position**
-            position <= (position + (move_mode ? 2 : 1)) & 4'hF;
+            position = (position + (move_mode ? 2 : 1)) & 4'hF;
 
             // **當 position 走完 16 個 LED，重置 LED**
             if (position == SW[6:3]) begin
                 LED = (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
                 LED[position] = (light_mode) ? 1'b0 : 1'b1;
+                if (move_mode)
+                    LED[(position + 1) & 4'hF] = (light_mode) ? 1'b0 : 1'b1;
             end
         end
     end
 endmodule
+
 
 module clock_divider (
     input clk,            // 100MHz FPGA 時鐘
