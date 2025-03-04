@@ -49,36 +49,49 @@ module Top_Module (
 
 endmodule
 
+// `LED_Controller.v` - 負責 LED 狀態更新
 module LED_Controller (
-    input [7:0] SW,        // 8-bit 控制開關
-    input clk,            // 來自 clock_divider 的慢時鐘
+    input [7:0] SW,       // 8-bit 控制開關
+    input clk,            // **接收 `slow_clk` 而非 `clk`**
     output reg [15:0] LED, // 16 顆 LED
     output reg [3:0] position // LED 當前位置 (範圍: 0~15)
 );
+    // 控制信號
+    wire move_mode;       // 0: 移動 1 顆 LED, 1: 移動 2 顆 LED
+    wire light_mode;      // 0: 逐漸變暗模式, 1: 逐漸變亮模式
 
-    wire move_mode;      // 0: 移動 1 顆 LED, 1: 移動 2 顆 LED
-    wire light_mode;     // 0: 亮燈模式, 1: 熄滅模式
+    reg [3:0] init_pos;
 
-    assign move_mode  = SW[2];    // 移動模式
-    assign light_mode = SW[7];    // 亮滅模式
+    assign move_mode = SW[2]; // 移動模式
+    assign light_mode = SW[7]; // 亮滅模式
 
+    // **LED 控制邏輯**
     always @(posedge clk or posedge SW[0]) begin
         if (SW[0]) begin // Reset
-            // *重置 LED 狀態*
-            LED      = (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
-            position = 4'b0000;  // 設置初始 LED 位置為 0
-            LED[0]   = (light_mode) ? 1'b0 : 1'b1; // 只設置第一個 LED
+            position <= SW[6:3];  // 設定初始 LED 位置
+            init_pos <= SW[6:3];  // 記錄初始位置
+            LED <= (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
         end else begin
-            // *更新 LED 亮燈狀態*
-            LED[position] <= (light_mode) ? 1'b0 : 1'b1;
+            // **逐漸變亮**
+            if (light_mode) begin
+                LED[position] <= 1'b1; // 讓當前 LED 變亮
+                if (move_mode) 
+                    LED[(position + 1) & 4'hF] <= 1'b1;
+            end 
+            // **逐漸變暗**
+            else begin
+                LED[position] <= 1'b0; // 讓當前 LED 變暗
+                if (move_mode) 
+                    LED[(position + 1) & 4'hF] <= 1'b0;
+            end
 
             // **更新 position**
             position <= (position + (move_mode ? 2 : 1)) & 4'hF;
 
-            // **當 position 變為 0，表示走完一圈，重置 LED**
-            if (position == 4'b0000) begin
-                LED = (light_mode) ? 16'b1111_1111_1111_1111 : 16'b0000_0000_0000_0000;
-                 LED[0]   = (light_mode) ? 1'b0 : 1'b1;// 只設置第一個 LED
+            // **檢查是否完成一輪變化**
+            if (&LED || ~|LED) begin
+                LED <= (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
+                LED[init_pos] <= light_mode ? 1'b1 : 1'b0;
             end
         end
     end
