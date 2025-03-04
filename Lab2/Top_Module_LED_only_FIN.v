@@ -66,6 +66,7 @@ module LED_Controller (
             // **檢查是否完成一輪變化**
             if (&LED || ~|LED) begin
                 LED <= (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
+                LED[init_pos] <= light_mode ? 1'b1 : 1'b0;
             end
         end
     end
