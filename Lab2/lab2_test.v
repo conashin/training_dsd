@@ -2,7 +2,8 @@ module Top_Module (
     input [7:0] SW,      // 8-bit 控制開關
     input clk,           // 100MHz FPGA 時鐘
     output [15:0] LED,    // 16 顆 LED
-    output [6:0] seg7_DN0    // 7-segment display 6to0 are gfedcba
+    output [6:0] seg7_DN0,    // 7-segment display 6to0 are gfedcba
+    output [3:0] an      // seg7 enable 3:DK1 2:DK2 1:DK3 0:DK4
 );
     wire slow_clk, clk_1khz;       // 分頻後的時鐘
     // wire [3:0] LEDState;       // LED 狀態 (Direct to DK2)
@@ -35,7 +36,7 @@ module Top_Module (
         .DK3(DK3),
         .DK4(DK4),
         .seg(seg7_DN0),
-        .an()
+        .an(an)
     );
 
     // 實例化 LED 控制模組
