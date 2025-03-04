@@ -14,10 +14,10 @@ module LED_Controller (
     always @(posedge clk or posedge SW[0]) begin
                         
         if (SW[0]) begin // Reset
-            position <= SW[6:3];  // 設置初始 LED 位置
-            init_pos <= SW[6:3];
-            LED <= (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
-            LED[position] <= (light_mode) ? 1'b1 : 1'b0; // 設定初始 LED
+            position = SW[6:3];  // 設置初始 LED 位置
+            init_pos = SW[6:3];
+            LED = (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
+            LED[position] = (light_mode) ? 1'b1 : 1'b0; // 設定初始 LED
         end else begin
             // **逐漸變亮**
             if (light_mode) begin
@@ -37,8 +37,8 @@ module LED_Controller (
 
             if(LED==16'b1111_1111_1111_1111||LED==16'b0000_0000_0000_0000) begin
                 // **檢查是否完成一輪變化**
-                LED <= (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
-                LED[init_pos] <= (light_mode) ? 1'b1 : 1'b0; // 設定初始 LED
+                LED = (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
+                LED[init_pos] = (light_mode) ? 1'b1 : 1'b0; // 設定初始 LED
               end
            
         end
