@@ -7,7 +7,7 @@ module Top_Module (
 );
     wire slow_clk, clk_1khz;       // 分頻後的時鐘
     // wire [3:0] LEDState;       // LED 狀態 (Direct to DK2)
-
+    wire [3:0] init_pos;
 
     wire [3:0] DK1, DK2, DK3, DK4; // 4-bit 7-segment display
     assign DK1 = SW[6:3];   
@@ -44,54 +44,48 @@ module Top_Module (
         .SW(SW),
         .clk(slow_clk),
         .LED(LED),
-        .position(DK2)
+        .position(DK2),
+        .init_pos(init_pos)
     );
 
 endmodule
 
 // `LED_Controller.v` - 負責 LED 狀態更新
 module LED_Controller (
-    input [7:0] SW,       // 8-bit 控制開關
-    input clk,            // **接收 `slow_clk` 而非 `clk`**
-    output reg [15:0] LED, // 16 顆 LED
-    output reg [3:0] position // LED 當前位置 (範圍: 0~15)
+    input [7:0] SW,        
+    input clk,            
+    output reg [15:0] LED, 
+    output reg [3:0] position,  
+    output reg [3:0] init_pos
 );
-    // 控制信號
-    wire move_mode;       // 0: 移動 1 顆 LED, 1: 移動 2 顆 LED
-    wire light_mode;      // 0: 逐漸變暗模式, 1: 逐漸變亮模式
+    wire move_mode;       
+    wire light_mode;      
 
-    reg [3:0] init_pos;
+    assign move_mode = SW[2]; 
+    assign light_mode = SW[7]; 
 
-    assign move_mode = SW[2]; // 移動模式
-    assign light_mode = SW[7]; // 亮滅模式
-
-    // **LED 控制邏輯**
     always @(posedge clk or posedge SW[0]) begin
-        if (SW[0]) begin // Reset
-            position <= SW[6:3];  // 設定初始 LED 位置
-            init_pos <= SW[6:3];  // 記錄初始位置
+        if (SW[0]) begin 
+            position <= SW[6:3];  
+            init_pos <= SW[6:3];  
             LED <= (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
         end else begin
-            // **逐漸變亮**
             if (light_mode) begin
-                LED[position] <= 1'b1; // 讓當前 LED 變亮
+                LED[position] <= 1'b1;
                 if (move_mode) 
                     LED[(position + 1) & 4'hF] <= 1'b1;
-            end 
-            // **逐漸變暗**
-            else begin
-                LED[position] <= 1'b0; // 讓當前 LED 變暗
+            end else begin
+                LED[position] <= 1'b0;
                 if (move_mode) 
                     LED[(position + 1) & 4'hF] <= 1'b0;
             end
 
-            // **更新 position**
             position <= (position + (move_mode ? 2 : 1)) & 4'hF;
 
-            // **檢查是否完成一輪變化**
             if (&LED || ~|LED) begin
-                LED <= (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
-                LED[init_pos] <= light_mode ? 1'b1 : 1'b0;
+                LED = (light_mode) ? 16'b0000_0000_0000_0000 : 16'b1111_1111_1111_1111;
+                LED[init_pos] = light_mode ? 1'b1 : 1'b0;
+                position = init_pos;
             end
         end
     end
@@ -110,7 +104,7 @@ module clock_divider (
     assign max_count = (speed) ? MAX_COUNT_2HZ : MAX_COUNT_1HZ;
 
     always @(posedge clk) begin
-        if (counter == max_count / 2 - 1) begin
+        if (counter >= max_count / 2 - 1) begin
             slow_clk <= ~slow_clk;
             counter <= 0;
         end else begin
@@ -120,35 +114,24 @@ module clock_divider (
 endmodule
 
 module div_1khz(
-            input clk_in,
-            input rst_n,
-            output reg clk_out = 0
-); // 1kHz降解訊號From elements
-    
-    parameter dividerCounter = 100000; // 100000000 / 1000 = 100000
-    reg[16:0] Counter;
-    
+    input clk_in,
+    input rst_n,
+    output reg clk_out = 0
+);
+
+    parameter DIVIDER_COUNT = 50000; // 100000000 / 1000 / 2 = 50000
+    reg[15:0] counter; // 減少bit數
+
     always @(posedge clk_in or negedge rst_n) begin
         if (!rst_n) begin
-            Counter <= 0;
+            counter <= 0;
+            clk_out <= 0;
+        end else begin
+            if (counter == DIVIDER_COUNT - 1) begin
+                counter <= 0;
+                clk_out <= ~clk_out; // 直接翻轉
             end else begin
-            if (Counter == (dividerCounter - 1)) begin
-                Counter <= 0;
-                end else begin
-                Counter <= Counter + 1;
-            end
-        end
-    end
-    
-    always @(posedge clk_in or negedge rst_n) begin
-        if (!rst_n) begin
-            clk_out <= 1'b0;
-            end else begin
-            if (Counter < (dividerCounter / 2)) begin
-                clk_out <= 1'b0;
-            end
-            else begin
-                clk_out <= 1'b1;
+                counter <= counter + 1;
             end
         end
     end
