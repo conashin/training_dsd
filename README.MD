@@ -6,7 +6,7 @@
 |      Item       | Done? | Last Update |
 | :-------------: | :---: | ----------- |
 |      Lab1       |   V   |  20250301   |
-|      Lab2       |       |             |
+|      Lab2       |   V   |  20250305   |
 | HDLBits– Medium |       |             |
 |      Lab3       |       |             |
 |      Lab4       |       |             |
