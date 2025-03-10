@@ -3,7 +3,7 @@ module keyDebouncing(input clk,
                      input keyIn,
                      output reg keyOut);
     
-    localparam samplingNum = 4;
+    localparam samplingNum = 4; // Smapling Number
     localparam SET         = 4'b0000; // Set
     localparam RESET       = 4'b1111; // Reset State
     
@@ -24,6 +24,4 @@ module keyDebouncing(input clk,
             default:    keyOut <= 1'b1;
         endcase
     end
-    
-    
 endmodule

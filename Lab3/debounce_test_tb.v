@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 // testbench verilog code for debouncing button without creating another clock
-module tb_button; reg pb_1; reg clk; wire pb_out; debouncing uut (clk,
+module tb_button; reg pb_1; reg clk; wire pb_out; keyDebouncing uut (clk,
                                                                   1'b0,
                                                                   pb_1,
                                                                   pb_out);
