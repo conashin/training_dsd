@@ -1,11 +1,22 @@
 module topModule(
-    input clk,
-    input buttonUp,
-    input buttonDown,
+    input clk, // FPGA 100MHz Clock
+    input rst, // FPGA Reset Button
+    input buttonUp, // Up Button
+    input buttonDown, // Down Button
+    input ps2Clk, // PS2 Clock
+    input ps2Data, // PS2 Data
+
+    output [15:0] LED, // 16 LEDs
+    output [6:0] DN0, // Left 4-digits 7-segment display
+    output [6:0] DN1, // Right 4-digits 7-segment display
+    output [3:0] an0, // 7-segment display enable
+    output [3:0] an1 // 7-segment display enable
 );
 
-
-
+    // 集線區
+    wire 1khzClk; // 1kHz Clock
+    wire [15:0] ps2DataOut; // PS2 Data Out
+    wire [3:0] speedCode; // Speed Code
 
 
 
