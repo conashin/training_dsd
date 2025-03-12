@@ -1,23 +1,23 @@
+// Using the Version of Lab3_test.v disabled other modules
 module topModule(
     input clk, // FPGA 100MHz Clock
     input rstN, // FPGA Reset Button
     input buttonUp, // Up Button
     input buttonDown, // Down Button
-    input ps2Clk, // PS2 Clock
-    input ps2Data, // PS2 Data
+    // input ps2Clk, // PS2 Clock
+    // input ps2Data, // PS2 Data
 
-    output [15:0] LED, // 16 LEDs
-    output [6:0] DN0, // Left 4-digits 7-segment display
+    // output [15:0] LED, // 16 LEDs
+    // output [6:0] DN0, // Left 4-digits 7-segment display
     output [6:0] DN1, // Right 4-digits 7-segment display
-    output [3:0] an0, // Left 7-segment display enable
+    // output [3:0] an0, // Left 7-segment display enable
     output [3:0] an1 // Right 7-segment display enable
 );
 
     // 集線區
-    wire rst;
     wire Clk1kHz; // 1kHz Clock
     wire Clk4Hz; // 1Hz Clock
-    wire [15:0] ps2DataOut; // PS2 Data Out
+    // wire [15:0] ps2DataOut; // PS2 Data Out
     wire [3:0] speedCode; // Speed Code
     wire debouncedUp, debouncedDown; // Debounced Up Down Button
     wire [6:0] DK1, DK2, DK3, DK4; // DN0 7-segment display signal
@@ -31,13 +31,14 @@ module topModule(
         .rst_n(~rst),
         .clk_out(Clk1kHz)
     );
-    
+
     div_4hz div4Hz (
         .clk_in(clk),
         .rst_n(~rst),
         .clk_out(Clk4Hz)
     );
 
+    /*
     ps2Processing ps2Proc (
         .ps2Clk(ps2Clk),
         .ps2Data(ps2Data),
@@ -45,21 +46,23 @@ module topModule(
         .clk(clk),
         .ps2DataOut(ps2DataOut)
     );
+    */
 
+    
     keyDebouncing keyDebounceUp (
         .clk(clk),
         .rst(rst),
         .keyIn(buttonUp),
         .keyOut(debouncedUp)
     );
-
+    
     keyDebouncing keyDebounceDown (
         .clk(clk),
         .rst(rst),
         .keyIn(buttonDown),
         .keyOut(debouncedDown)
     );
-
+    
     speedControl speedCtrl (
         .up(debouncedUp),
         .down(debouncedDown),
@@ -68,6 +71,7 @@ module topModule(
         .clk(Clk4Hz)
     );
 
+    /*
     ps2HexDisplayforLab3seg7 ps2HexDisplay (
         .ps2Data(ps2DataOut),
         .DK1(DK1),
@@ -75,6 +79,7 @@ module topModule(
         .DK3(DK3),
         .DK4(DK4)
     );
+    */
 
     speedDisplayforLab3seg7 speedDisplay (
         .speedCode(speedCode),
@@ -84,6 +89,7 @@ module topModule(
         .DK4(DK8)
     );
 
+    /*
     seg7 segDisplayLeft (
         .clk_1khz(Clk1kHz),
         .seg_DK1(DK1),
@@ -93,6 +99,7 @@ module topModule(
         .seg(DN0),
         .an(an0)
     );
+    */
 
     seg7 segDisplayRight (
         .clk_1khz(Clk1kHz),
@@ -105,7 +112,7 @@ module topModule(
     );
 
     // LED
-    assign LED = 16'b1111111111111111; // Only for testing
+    // assign LED = 16'b1111111111111111; // Only for testing
 
 endmodule
 
@@ -200,7 +207,7 @@ module seg7 (
     output reg [3:0] an
 ); 
 
-    reg [1:0] refresh_counter; // 用來控制顯示Digit
+    reg [1:0] refresh_counter = 0; // 用來控制顯示Digit
     
     always @(posedge clk_1khz) begin
         refresh_counter <= refresh_counter + 1;
@@ -227,7 +234,6 @@ module seg7 (
         .seg_out(seg_DK4)
     );
     */
-
 
     always @(*) begin
         seg = 7'b0000000; // 預設關閉所有顯示器
