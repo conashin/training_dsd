@@ -1,0 +1,60 @@
+input:
+	button
+		RST reset		reset
+		S1 decrease(debounce) 	-5km/h
+		S3 pitch 		finish setting
+		S4 increase(debounce) 	+5km/h
+
+	keyboard
+		F fast
+		S slider
+		C change up
+
+seg7
+
+group 0(show mode)	     group 1(show speed)
+D1 D2 D3 D4  		     D5 D6 D7 D8
+
+1.before pitch(reset) 
+		group 0:nothing
+		group 1:show initial speed (135)
+
+2.choose mode:
+	        group 0:
+		 F fast
+		 S slid
+		 C chup
+
+3.change speed: 
+default speed=135   120 <= speed <= 160
+
+
+4.enter pitch: throw the ball(LED start)
+
+
+modes: 0-> none 
+       1 -> fast 
+       2 -> slid 
+       3 -> change
+LED
+
+module LED_Controller(
+    input wire clk,            // 100MHz 時鐘
+    input wire rst,
+    input wire [7:0] speed,    // 速度參數 120~160
+    input wire [1:0] mode,           // 模式選擇
+    output reg [15:0] LED      // 16 顆 LED 控制
+);
+
+left	    	  right
+D1 D2 D3....D14 D15 D16
+
+default speed=135   120 <= speed <= 160
+Speed>=140 2Hz else 1Hz
+from right to left
+
+for change ball:
+D1-D8: 2Hz  D9-D16: 2Hz
+	
+
+
