@@ -1,3 +1,4 @@
+// Speed Displaying had been tested on FPGA
 module topModule(
     input clk, // FPGA 100MHz Clock
     input rstN, // FPGA Reset Button
