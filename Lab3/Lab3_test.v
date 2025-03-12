@@ -14,19 +14,95 @@ module topModule(
 );
 
     // 集線區
-    wire 1khzClk; // 1kHz Clock
+    wire Clk1kHz; // 1kHz Clock
     wire [15:0] ps2DataOut; // PS2 Data Out
     wire [3:0] speedCode; // Speed Code
+    wire debouncedUp, debouncedDown; // Debounced Up Down Button
+    wire [6:0] DK1, DK2, DK3, DK4; // DN0 7-segment display signal
+    wire [6:0] DK5, DK6, DK7, DK8; // DN1 7-segment display signal
 
+    // 模組區
+    div_1khz div1kHz (
+        .clk_in(clk),
+        .rst_n(~rst),
+        .clk_out(Clk1kHz)
+    );
 
+    ps2Processing ps2Proc (
+        .ps2Clk(ps2Clk),
+        .ps2Data(ps2Data),
+        .rst(rst),
+        .clk(clk),
+        .ps2DataOut(ps2DataOut)
+    );
+
+    keyDebouncing keyDebounceUp (
+        .clk(clk),
+        .rst(rst),
+        .keyIn(buttonUp),
+        .keyOut(debouncedUp)
+    );
+
+    keyDebouncing keyDebounceDown (
+        .clk(clk),
+        .rst(rst),
+        .keyIn(buttonDown),
+        .keyOut(debouncedDown)
+    );
+
+    speedControl speedCtrl (
+        .up(debouncedUp),
+        .down(debouncedDown),
+        .rst(rst),
+        .speedCode(speedCode)
+    );
+
+    ps2HexDisplayforLab3seg7 ps2HexDisplay (
+        .ps2Data(ps2DataOut),
+        .DK1(DK1),
+        .DK2(DK2),
+        .DK3(DK3),
+        .DK4(DK4)
+    );
+
+    speedDisplayforLab3seg7 speedDisplay (
+        .speedCode(speedCode),
+        .DK1(DK5),
+        .DK2(DK6),
+        .DK3(DK7),
+        .DK4(DK8)
+    );
+
+    seg7 segDisplayLeft (
+        .clk_1khz(Clk1kHz),
+        .seg_DK1(DK1),
+        .seg_DK2(DK2),
+        .seg_DK3(DK3),
+        .seg_DK4(DK4),
+        .seg(DN0),
+        .an(an0)
+    );
+
+    seg7 segDisplayRight (
+        .clk_1khz(Clk1kHz),
+        .seg_DK1(DK5),
+        .seg_DK2(DK6),
+        .seg_DK3(DK7),
+        .seg_DK4(DK8),
+        .seg(DN1),
+        .an(an1)
+    );
+
+    // LED
+    assign LED = 16'b1111111111111111; // Only for testing
 
 endmodule
 
 // Clock 訊號處理
 module div_1khz(
-            input clk_in,
-            input rst_n,
-            output reg clk_out = 0
+    input clk_in,
+    input rst_n,
+    output reg clk_out = 0
 ); // 1kHz降解訊號From elements
     
     parameter dividerCounter = 100000; // 100000000 / 1000 = 100000
@@ -80,17 +156,17 @@ endmodule
 // 訊號處理區塊
 module seg7 (
     input clk_1khz, // 輸入降解訊號
-    input [3:0] DK1,
-    input [3:0] DK2,
-    input [3:0] DK3,
-    input [3:0] DK4,
+    input [6:0] seg_DK1,
+    input [6:0] seg_DK2,
+    input [6:0] seg_DK3,
+    input [6:0] seg_DK4,
     output reg [6:0] seg, // gfedcba, output single 7-segment digits signal
     output reg [3:0] an
 ); 
 
     reg [1:0] refresh_counter; // 用來控制顯示Digit
     
-    wire [6:0] seg_DK1, seg_DK2, seg_DK3, seg_DK4;
+    /* wire [6:0] seg_DK1, seg_DK2, seg_DK3, seg_DK4;
 
     always @(posedge clk_1khz) begin
         refresh_counter <= refresh_counter + 1;
@@ -115,6 +191,7 @@ module seg7 (
         .in(DK4),
         .seg_out(seg_DK4)
     );
+    */
 
     always @(*) begin
         seg = 7'b0000000; // 預設關閉所有顯示器
@@ -143,7 +220,7 @@ module seg7 (
     end
 endmodule
 
-module ps2Processing(
+module ps2Processing( // PS2訊號處理
     input ps2Clk,
     input ps2Data,
     input rst,
@@ -256,7 +333,7 @@ module ps2Processing(
     end          
 endmodule
 
-module keyDebouncing(
+module keyDebouncing( // 按鍵消彈
     input clk,
     input rst,
     input keyIn,
@@ -287,7 +364,7 @@ module keyDebouncing(
 endmodule
 
 // 訊號解碼區塊
-module ps2HexDisplayforLab3seg7(
+module ps2HexDisplayforLab3seg7( // 鍵盤訊號轉譯為7-segment顯示訊號
     input [15:0] ps2Data,
     output reg [6:0] DK1,
     output reg [6:0] DK2,
@@ -319,7 +396,7 @@ module ps2HexDisplayforLab3seg7(
     end
 endmodule
 
-module speedDisplayforLab3seg7(
+module speedDisplayforLab3seg7( // 速度訊號轉譯為7-segment顯示訊號
     input [3:0] speedCode,
     output reg [6:0] DK1,
     output reg [6:0] DK2,
