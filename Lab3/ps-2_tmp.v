@@ -60,6 +60,7 @@ module ps2 (input PS2_KBCLK,
 
 
         case (state_reg)
+        
             waitingForStart : begin
                 if (PS2_KBDAT == START) begin
                     n_next     = 4'd9;
@@ -71,24 +72,23 @@ module ps2 (input PS2_KBCLK,
                     end
                 end
             end
-            sendingData : begin
-               
-                    
-                    if (n_reg == 4'd9) begin
-                        parity_next = PS2_KBDAT;
-                    end
-                    else begin
-                        parity_next = parity_reg ^ PS2_KBDAT;
-                    end
 
-                    data_next = (data_reg >> 1'b1) | ({PS2_KBDAT,{8{1'b0}}});
-                    
-                    if (n_reg == 4'd1) begin
-                        state_next = endProcessing;
-                    end
-                    else begin
-                        n_next = n_reg - 1'b1;
-                    end
+            sendingData : begin                    
+                if (n_reg == 4'd9) begin
+                    parity_next = PS2_KBDAT;
+                end
+                else begin
+                    parity_next = parity_reg ^ PS2_KBDAT;
+                end
+
+                data_next = (data_reg >> 1'b1) | ({PS2_KBDAT,{8{1'b0}}});
+                
+                if (n_reg == 4'd1) begin
+                    state_next = endProcessing;
+                end
+                else begin
+                    n_next = n_reg - 1'b1;
+                end
                 
             end
             
@@ -113,6 +113,7 @@ module ps2 (input PS2_KBCLK,
                     state_next = waitingForStart;
                 end
             end
+            
             default: begin
             end
         endcase
