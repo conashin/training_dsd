@@ -1,28 +1,29 @@
 // Speed Displaying had been tested on FPGA
 module topModule(
-    input clk, // FPGA 100MHz Clock
-    input rstN, // FPGA Reset Button
-    input buttonUp, // Up Button
-    input buttonDown, // Down Button
-    input ps2Clk, // PS2 Clock
-    input ps2Data, // PS2 Data
+    input clk,          // FPGA 100MHz Clock
+    input rstN,         // FPGA Reset Button
+    input buttonUp,     // Up Button
+    input buttonDown,   // Down Button
+    input ps2Clk,       // PS2 Clock
+    input ps2Data,      // PS2 Data
 
-    output [15:0] LED, // 16 LEDs
-    output [6:0] DN0, // Left 4-digits 7-segment display
-    output [6:0] DN1, // Right 4-digits 7-segment display
-    output [3:0] an0, // Left 7-segment display enable
-    output [3:0] an1 // Right 7-segment display enable
+    output [15:0] LED,  // 16 LEDs
+    output [6:0] DN0,   // Left 4-digits 7-segment display
+    output [6:0] DN1,   // Right 4-digits 7-segment display
+    output [3:0] an0,   // Left 7-segment display enable
+    output [3:0] an1    // Right 7-segment display enable
 );
 
     // 集線區
     wire rst;
-    wire Clk1kHz; // 1kHz Clock
-    wire Clk4Hz; // 1Hz Clock
-    wire [15:0] ps2DataOut; // PS2 Data Out
-    wire [3:0] speedCode; // Speed Code
-    wire debouncedUp, debouncedDown; // Debounced Up Down Button
-    wire [6:0] DK1, DK2, DK3, DK4; // DN0 7-segment display signal
-    wire [6:0] DK5, DK6, DK7, DK8; // DN1 7-segment display signal
+    wire error, ascii_valid;            // PS2 Keyboard
+    wire Clk1kHz;                       // 1kHz Clock
+    wire Clk4Hz;                        // 1Hz Clock
+    wire [7:0] asciiOut;                // PS2 ASCII Data Out
+    wire [3:0] speedCode;               // Speed Code
+    wire debouncedUp, debouncedDown;    // Debounced Up Down Button
+    wire [6:0] DK1, DK2, DK3, DK4;      // DN0 7-segment display signal
+    wire [6:0] DK5, DK6, DK7, DK8;      // DN1 7-segment display signal
 
     assign rst = ~rstN;
 
@@ -32,7 +33,7 @@ module topModule(
     )
         div1kHz (
         .clk_in(clk),
-        .rst_n(~rst),
+        .rst_n(rstN),
         .clk_out(Clk1kHz)
     );
     
@@ -41,16 +42,17 @@ module topModule(
     )
         div4Hz (
         .clk_in(clk),
-        .rst_n(~rst),
+        .rst_n(rstN),
         .clk_out(Clk4Hz)
     );
 
-    ps2Processing ps2Proc (
-        .ps2Clk(ps2Clk),
-        .ps2Data(ps2Data),
-        .rst(rst),
-        .clk(clk),
-        .ps2DataOut(ps2DataOut)
+    ps2_keyboard ps2Keyboard (
+        .ps2clk(ps2Clk),
+        .ps2data(ps2Data),
+        .reset(rst),
+        .ascii_out(asciiOut),
+        .ascii_valid(),
+        .error()
     );
 
     keyDebouncing keyDebounceUp (
@@ -76,7 +78,7 @@ module topModule(
     );
 
     ps2HexDisplayforLab3seg7 ps2HexDisplay (
-        .ps2Data(ps2DataOut),
+        .ps2Data(asciiOut),
         .DK1(DK1),
         .DK2(DK2),
         .DK3(DK3),
@@ -238,117 +240,238 @@ module seg7 (
     end
 endmodule
 
-module ps2Processing( // PS2訊號處理
-    input ps2Clk,
-    input ps2Data,
-    input rst,
-    input clk,
-    output [15:0] ps2DataOut // {Byte2, Byte1}
+module ps2_keyboard (
+    input               ps2clk,
+    input               ps2data,
+    input               reset,
+    output reg [7:0]    ascii_out,
+    output reg          ascii_valid,
+    output reg          error
 );
 
-    // FSM from fsm_ps2
-    localparam statWaiting = 0, statDataTrans = 1, statDone = 2;
-    localparam START = 0, STOP = 1;
-    
-    reg nowParity, nextParity; // Parity Verification
-    reg [1:0] nowStat, nextStat; // FSM state
-    reg [3:0] nowCounter, nextCounter;
-    reg [8:0] nowData, nextData;
-    reg [15:0] nowBinCode, nextBinCode;
-    reg [15:0] nowDisplayBinCode, nextDisplayBinCode;
-    reg nowScanCounter, nextScanCounter;
+    // --- Constants ---
+    localparam  IDLE        = 4'b0001,      // 等待狀態
+                START_BIT   = 4'b0010,      // 開始位元
+                DATA_BITS   = 4'b0100,      // 資料位元
+                PARITY_BIT  = 4'b1000,      // 奇偶校驗位元
+                STOP_BIT    = 4'b1001;      // 結束位元
 
-    assign ps2DataOut = nowDisplayBinCode;
+    // --- PS/2 Receiver Register---
+    reg [3:0]   state           = IDLE;     // State machine 狀態
+    reg [3:0]   bitCounter      = 0;        // 計數器
+    reg [10:0]  shift_reg       = 0;        // 已掃描碼暫存器 
+    reg         parity_check    = 0;        // 奇偶校驗
+    reg [7:0]   scan_code;                  // 掃描碼
+    reg         is_break_code   = 0;        // 是否為中斷碼
+    reg [7:0]   prev_scan_code  = 0;        // 上一個掃描碼
 
-    // Initialize and reset
-    always @(posedge clk, posedge rst) begin
-        if (rst) begin
-            nowStat             <= 2'd0;
-            nextCounter         <= 4'd0;
-            nowData             <= 9'd0;
-            nowParity           <= 1'd0;
-            nowBinCode          <= 16'd0;
-            nowScanCounter      <= 1'd0;
-            nowDisplayBinCode   <= 16'd0;
-        end
+    // --- Key State Tracking ---
+    reg shift_pressed   = 0;                // Shift 鍵是否被按下
+    reg caps_lock       = 0;                // Caps Lock 鍵是否被按下
+    reg caps_toggled    = 0;                // Caps Lock 鍵是否被切換
+
+    // --- ASCII Converter ---
+    wire [7:0] ascii_char;  // Wire to connect to the converter
+
+    ascii_converter ascii_conv (
+        .scan_code(scan_code),
+        .shift_pressed(shift_pressed),
+        .caps_lock(caps_lock),
+        .ascii_char(ascii_char)
+    );
+
+    // --- State Machine ---
+    always @(negedge ps2clk or posedge reset) begin
+        if (reset) begin
+            // 重設所有變數，進入 IDLE 狀態
+            state           <= IDLE;
+            bitCounter      <= 0;
+            shift_reg       <= 0;
+            parity_check    <= 0;
+            ascii_out       <= 0;
+            ascii_valid     <= 0;
+            error           <= 0;
+            scan_code       <= 0;
+            is_break_code   <= 0;
+            prev_scan_code  <= 0;
+            shift_pressed   <= 0;
+            caps_lock       <= 0;
+            caps_toggled    <= 0;
+        end 
         else begin
-            nowStat             <= nextStat;
-            nowCounter          <= nextCounter;
-            nowData             <= nextData;
-            nowParity           <= nextParity;
-            nowBinCode          <= nextBinCode;
-            nowScanCounter      <= nextScanCounter;
-            nowDisplayBinCode   <= nextDisplayBinCode;
+            case (state)
+                // --- 等待輸入 ---
+                IDLE: begin
+                    ascii_valid <= 0;
+                    error       <= 0;
+                    if (ps2data == 0) begin
+                        state           <= START_BIT;
+                        bitCounter      <= 0;
+                        shift_reg       <= 0;
+                        parity_check    <= 1; // Odd parity initialization
+                    end
+                end
+
+                // --- 開始位元 ---
+                START_BIT: begin
+                    state <= DATA_BITS;
+                end
+
+                // --- 抓取資料 ---
+                DATA_BITS: begin
+                    bitCounter              <= bitCounter + 1;              // 計數器加一
+                    shift_reg[bitCounter]   <= ps2data;                     // 把資料存入暫存器
+                    parity_check            <= parity_check ^ ps2data;      // 動態更新奇偶較驗(資料位元中1的總數，加上奇偶校驗位應該是奇數)
+                    if (bitCounter == 7) begin
+                        state <= PARITY_BIT;                                // 位元抓取完畢，進入奇偶校驗
+                    end
+                end
+
+                // --- 奇偶校驗 ---
+                PARITY_BIT: begin
+                    if (parity_check == ps2data) begin
+                        state <= STOP_BIT;                                  // 奇偶校驗正確，進入結束位元
+                    end else begin
+                        state <= IDLE;
+                        error <= 1;                                         // 奇偶校驗錯誤，回到等待狀態
+                    end
+                end
+
+                // --- 結束位元 ---
+                STOP_BIT: begin
+                    if (ps2data == 1) begin             // 確定結束位元
+                        state       <= IDLE;            // 回到等待狀態
+                        scan_code   <= shift_reg[8:1];  // 儲存掃描碼
+
+                        // --- 按鍵動作檢查及處理 ---
+                        if (shift_reg[8:1] == 8'hF0) begin
+                            is_break_code <= 1;         // 偵測到中斷碼
+                        end 
+                        else if (shift_reg[8:1] == 8'hE0) begin
+                            // 未實作牙~                 // 偵測到功能按鍵
+                        end 
+                        else begin
+                            if (is_break_code) begin
+                                case (shift_reg[8:1])
+                                    8'h12, 8'h59: shift_pressed <= 0;   // 左/右 Shift 鍵釋放
+                                endcase
+                            end 
+                            else begin                                              // 按鍵按下事件
+                                case (shift_reg[8:1])           
+                                    8'h12, 8'h59: shift_pressed <= 1;               // 左/右 Shift 鍵按下
+                                    8'h58: begin                                    // Caps Lock 鍵處理
+                                        if (!caps_toggled) begin            
+                                            caps_lock   <= ~caps_lock;              // 切換大小寫狀態
+                                            caps_toggled<= 1;                       // 標記已切換，防止重複觸發
+                                        end
+                                    end
+                                    default: begin
+                                        if(prev_scan_code != 8'hE0) begin           // 確認不是擴展按鍵序列
+                                            ascii_out   <= ascii_char;              // 設定ASCII輸出
+                                            ascii_valid <= (ascii_char != 8'h00);   // 確認ASCII碼有效
+                                        end
+                                    end
+                                endcase
+                                caps_toggled <= 0;                                  // 重置Caps Lock切換標記
+                            end         
+                            is_break_code <= 0;                                     // 重置斷碼標記
+
+                        end
+                        prev_scan_code <= shift_reg[8:1];
+
+                    end 
+                    else begin // 結束位元錯誤
+                        state <= IDLE;
+                        error <= 1; // Stop bit error
+                    end
+                end
+            endcase
         end
     end
 
-    // State flip-flops (sequential)
-    always @(posedge ps2Clk) begin
-        nextStat            = nowStat;
-        nextCounter         = nowCounter;
-        nextData            = nowData;
-        nextParity          = nowParity;
-        nextBinCode         = nowBinCode;
-        nextScanCounter     = nowScanCounter;
-        nextDisplayBinCode  = nowDisplayBinCode;
+endmodule
 
-        case (nowStat)
+module ascii_converter (
+    input  [7:0] scan_code,         // 掃描碼
+    input        shift_pressed,     // Shift 鍵是否被按下
+    input        caps_lock,         // Caps Lock 鍵是否被按下
+    output [7:0] ascii_char         // 輸出ASCII 字元
+);
 
-            statWaiting: begin
-                if (ps2Data == START) begin
-                    nextCounter = 4'd9;
-                    nextData = 9'd0;
-                    nextStat = statDataTrans;
-                    if (nowData[7:0] != 8'he0 && nowData[7:0] != 8'hf0) begin
-                        nextBinCode = 16'd0;
-                    end
-                end
-            end
+    function [7:0] scan_code_to_ascii;
+        input [7:0] scan_code;
+        input       shift_pressed;
+        input       caps_lock;
+        reg [7:0]   ascii_char_func;  // 內部變數，避免與模組輸出衝突
+        begin
+            ascii_char_func = 8'h00; // Default: no character
 
-            statDataTrans: begin
-                // Parity Calculation
-                if (nowCounter == 4'd9) begin
-                    nextParity = ps2Data;
-                end
-                else begin
-                    nextParity = nowParity ^ ps2Data;
-                end
+            case (scan_code)
+                // --- Numbers (with Shift) ---
+                8'h16: ascii_char_func = shift_pressed ? "!" : "1";
+                8'h1E: ascii_char_func = shift_pressed ? "@" : "2";
+                8'h26: ascii_char_func = shift_pressed ? "#" : "3";
+                8'h25: ascii_char_func = shift_pressed ? "$" : "4";
+                8'h2E: ascii_char_func = shift_pressed ? "%" : "5";
+                8'h36: ascii_char_func = shift_pressed ? "^" : "6";
+                8'h3D: ascii_char_func = shift_pressed ? "&" : "7";
+                8'h3E: ascii_char_func = shift_pressed ? "*" : "8";
+                8'h46: ascii_char_func = shift_pressed ? "(" : "9";
+                8'h45: ascii_char_func = shift_pressed ? ")" : "0";
 
-                // Data Collection
-                //nextData = (nowData >> 1) | ({ps2Data, {8{1'b0}}});
-                nextData = {ps2Data, nowData[8:1]};
+                // --- Letters (with Shift and Caps Lock) ---
+                8'h1C: ascii_char_func = (shift_pressed ^ caps_lock) ? "A" : "a";
+                8'h32: ascii_char_func = (shift_pressed ^ caps_lock) ? "B" : "b";
+                8'h21: ascii_char_func = (shift_pressed ^ caps_lock) ? "C" : "c";
+                8'h23: ascii_char_func = (shift_pressed ^ caps_lock) ? "D" : "d";
+                8'h24: ascii_char_func = (shift_pressed ^ caps_lock) ? "E" : "e";
+                8'h2B: ascii_char_func = (shift_pressed ^ caps_lock) ? "F" : "f";
+                8'h34: ascii_char_func = (shift_pressed ^ caps_lock) ? "G" : "g";
+                8'h33: ascii_char_func = (shift_pressed ^ caps_lock) ? "H" : "h";
+                8'h43: ascii_char_func = (shift_pressed ^ caps_lock) ? "I" : "i";
+                8'h3B: ascii_char_func = (shift_pressed ^ caps_lock) ? "J" : "j";
+                8'h42: ascii_char_func = (shift_pressed ^ caps_lock) ? "K" : "k";
+                8'h4B: ascii_char_func = (shift_pressed ^ caps_lock) ? "L" : "l";
+                8'h3A: ascii_char_func = (shift_pressed ^ caps_lock) ? "M" : "m";
+                8'h31: ascii_char_func = (shift_pressed ^ caps_lock) ? "N" : "n";
+                8'h44: ascii_char_func = (shift_pressed ^ caps_lock) ? "O" : "o";
+                8'h4D: ascii_char_func = (shift_pressed ^ caps_lock) ? "P" : "p";
+                8'h15: ascii_char_func = (shift_pressed ^ caps_lock) ? "Q" : "q";
+                8'h2D: ascii_char_func = (shift_pressed ^ caps_lock) ? "R" : "r";
+                8'h1B: ascii_char_func = (shift_pressed ^ caps_lock) ? "S" : "s";
+                8'h2C: ascii_char_func = (shift_pressed ^ caps_lock) ? "T" : "t";
+                8'h3C: ascii_char_func = (shift_pressed ^ caps_lock) ? "U" : "u";
+                8'h2A: ascii_char_func = (shift_pressed ^ caps_lock) ? "V" : "v";
+                8'h1D: ascii_char_func = (shift_pressed ^ caps_lock) ? "W" : "w";
+                8'h22: ascii_char_func = (shift_pressed ^ caps_lock) ? "X" : "x";
+                8'h35: ascii_char_func = (shift_pressed ^ caps_lock) ? "Y" : "y";
+                8'h1A: ascii_char_func = (shift_pressed ^ caps_lock) ? "Z" : "z";
 
-                // Check if the data is complete
-                if (nowCounter == 4'd1) begin
-                    nextStat = statDone;
-                end
-                else begin
-                    nextCounter = nowCounter - 1;
-                end
-            end
+                // --- Special Characters (with Shift) ---
+                8'h4E: ascii_char_func = shift_pressed ? "_" : "-";
+                8'h55: ascii_char_func = shift_pressed ? "+" : "=";
+                8'h5D: ascii_char_func = shift_pressed ? "}" : "]";
+                8'h54: ascii_char_func = shift_pressed ? "{" : "[";
+                8'h4C: ascii_char_func = shift_pressed ? ":" : ";";
+                8'h52: ascii_char_func = shift_pressed ? "\"" : "'";
+                8'h5B: ascii_char_func = shift_pressed ? "<" : ",";
+                8'h41: ascii_char_func = shift_pressed ? "~" : "`";
+                8'h4A: ascii_char_func = shift_pressed ? "?" : "/";
+                8'h5A: ascii_char_func = 8'h0D; // Enter (Carriage Return)
+                8'h66: ascii_char_func = 8'h08; // Backspace
+                8'h29: ascii_char_func = " ";    // Space
+                8'h0E: ascii_char_func = 8'h09; // TAB
+                8'h5C: ascii_char_func = shift_pressed ? "|" : "\\";
+                8'h49: ascii_char_func = shift_pressed ? ">" : ".";
+                default: ascii_char_func = 8'h00;
+            endcase
 
-            statDone: begin
-                // Display the data
-                if (ps2Data == STOP) begin // 檢查PS2_KBDAT是否為STOP
-                    // 行奇偶校驗檢查
-                    if (nowParity) begin
-                        nextBinCode = (nowBinCode << 8) | nowData[7:0]; // Update bin code
-                        if (nextScanCounter == 0 || nowData[7:0] == 8'he0 || nowData[7:0] == 8'hf0) begin // 開始新序列&處理特殊掃描碼
-                            nextScanCounter = 1; // 計數器歸1
-                        end
-                        else begin
-                            nextDisplayBinCode = nextBinCode; // 更新顯示碼
-                            nextScanCounter = 0; // 計數器歸0
-                        end
-                    end
-                    else begin
-                        nextDisplayBinCode = 16'hFFFF;
-                    end
-                    nextStat = statWaiting;
-                end
-            end
-        endcase
-    end          
+            scan_code_to_ascii = ascii_char_func;
+        end
+    endfunction
+
+    assign ascii_char = scan_code_to_ascii(scan_code, shift_pressed, caps_lock);
+
 endmodule
 
 module keyDebouncing( // 按鍵消彈
@@ -383,7 +506,7 @@ endmodule
 
 // 訊號解碼區塊
 module ps2HexDisplayforLab3seg7( // 鍵盤訊號轉譯為7-segment顯示訊號
-    input [15:0] ps2Data,
+    input [7:0] ps2Data,
     output reg [6:0] DK1,
     output reg [6:0] DK2,
     output reg [6:0] DK3,
@@ -392,19 +515,19 @@ module ps2HexDisplayforLab3seg7( // 鍵盤訊號轉譯為7-segment顯示訊號
     
     always @(*) begin
         case (ps2Data)
-            16'h2b: begin // Fast
+            "f": begin // Fast
                 DK1 = 7'b1110001;
                 DK2 = 7'b1110111;
                 DK3 = 7'b1101101;
                 DK4 = 7'b1111000;
             end
-            16'h21: begin// ChUP
+            "c": begin// ChUP
                 DK1 = 7'b0111001;
                 DK2 = 7'b1110100;
                 DK3 = 7'b0111110;
                 DK4 = 7'b1110011;
             end
-            16'h1b: begin // SLID
+            "s": begin // SLID
                 DK1 = 7'b1101101;
                 DK2 = 7'b0111000;
                 DK3 = 7'b0000110;
