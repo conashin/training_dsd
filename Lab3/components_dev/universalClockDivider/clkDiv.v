@@ -1,6 +1,6 @@
 module clkDiv #(
-    parameter clkInFreq = 100_000_000, // Input clock frequency (default: 100MHz)
-    parameter tgtFreq = 1              // Target output clock frequency (default: 1Hz)
+    parameter INPUT_FREQ = 100_000_000, // Input clock frequency (default: 100MHz)
+    parameter TARGET_FREQ = 1              // Target output clock frequency (default: 1Hz)
 ) (
     input clk_in,
     input rst_n,
@@ -9,7 +9,7 @@ module clkDiv #(
 
     // Calculate the divider value.  We divide by 2 * target hz because we toggle
     // clk_out, effectively creating a 50% duty cycle.
-    localparam divParm = clkInFreq / (2 * tgtFreq);
+    localparam divParm = INPUT_FREQ / (2 * TARGET_FREQ);
 
     // Determine the required counter width (number of bits)
     localparam COUNTER_WIDTH = $clog2(divParm);
@@ -32,3 +32,16 @@ module clkDiv #(
     end
 
 endmodule
+
+
+// Usage
+/*
+     clock_divider #(
+        .CLK_IN_HZ(100_000_000), // Or use clk, and get the frequency from the constraint file.
+        .TARGET_HZ(1)
+    ) div1Hz ( // 實例化1Hz clock divider
+        .clk_in(clk),
+        .rst_n(rst),
+        .clk_out(Clk1Hz) // Output is Clk1Hz
+    );
+*/

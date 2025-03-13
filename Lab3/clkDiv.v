@@ -36,7 +36,7 @@ endmodule
 
 // Usage
 /*
-     clock_divider #(
+     clkDiv #(
         .CLK_IN_HZ(100_000_000), // Or use clk, and get the frequency from the constraint file.
         .TARGET_HZ(1)
     ) div1Hz ( // 實例化1Hz clock divider
