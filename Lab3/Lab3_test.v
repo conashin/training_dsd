@@ -28,7 +28,6 @@ module topModule(
 
     // 模組區
     clkDiv #(
-        .INPUT_FREQ(100_000_000), // 100MHz
         .TARGET_FREQ(1000) // 1kHz
     )
         div1kHz (
@@ -38,7 +37,6 @@ module topModule(
     );
     
     clkDiv #(
-        .INPUT_FREQ(100_000_000), // 100MHz
         .TARGET_FREQ(4) // 4Hz
     )
         div4Hz (
