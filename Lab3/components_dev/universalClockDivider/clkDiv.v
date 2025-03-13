@@ -36,12 +36,13 @@ endmodule
 
 // Usage
 /*
-     clock_divider #(
-        .CLK_IN_HZ(100_000_000), // Or use clk, and get the frequency from the constraint file.
-        .TARGET_HZ(1)
-    ) div1Hz ( // 實例化1Hz clock divider
+    clkDiv #(
+        .INPUT_FREQ(100_000_000), // 100MHz
+        .TARGET_FREQ(4) // 4Hz
+    )
+        div4Hz (
         .clk_in(clk),
-        .rst_n(rst),
-        .clk_out(Clk1Hz) // Output is Clk1Hz
+        .rst_n(~rst),
+        .clk_out(Clk4Hz)
     );
 */
