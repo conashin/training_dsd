@@ -3,7 +3,7 @@ module LED_Controller(
     input wire rst,             // 重置按鈕
     input wire [7:0] speed,     // 速度參數 120~160 (影響時鐘選擇)
     input wire [1:0] mode,      // 模式選擇
-    output reg [15:0] LED       // 16 顆 LED 控制(前8顆 15 -8,c.後8顆 7 -0 )
+    output reg [15:0] LED       // 16 顆 LED 控制(前8顆 15 - 8,後8顆 7 - 0 )
 );
     wire clk_1hz, clk_2hz;
     wire clk_div;
