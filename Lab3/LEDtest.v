@@ -3,7 +3,7 @@ module LED_Controller(
     input wire rst,             // 重置按鈕
     input wire [7:0] speed,     // 速度參數 120~160 (影響時鐘選擇)
     input wire [1:0] mode,      // 模式選擇
-    output reg [15:0] LED       // 16 顆 LED 控制
+    output reg [15:0] LED       // 16 顆 LED 控制(前8顆 15 -8,前8顆 7 -0 )
 );
     wire clk_1hz, clk_2hz;
     wire clk_div;
@@ -38,7 +38,7 @@ module LED_Controller(
             LED <= 16'b0;
             led_pos <= 15;
         end else begin
-            LED = 16'b0; // **確保每次進入 always block 時 LED 陣列被清除**
+            LED = 16'b0; // 確保每次進入 always block 時 LED 陣列被清除
             
             case (mode)
                 2'b01: begin
@@ -48,7 +48,7 @@ module LED_Controller(
                 2'b10: begin // 模式 2：滑動
                     if (clk_div) begin
                         if (led_pos > 7)
-                            LED[led_pos] = 1'b1; // 前 8 顆正常亮
+                            LED[led_pos] = 1'b1; // 前 8 顆逐個亮
                         else if (led_pos % 2 == 1)// 後 8 顆交錯亮
                             LED[led_pos - 1] = 1'b1;
                         else
