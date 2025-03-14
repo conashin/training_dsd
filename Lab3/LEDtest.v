@@ -2,8 +2,8 @@ module LED_Controller(
     input wire clk,             // 100MHz 時鐘
     input wire rst,             // 重置按鈕
     input wire pitch,           // 投球
-    input wire [7:0] speed,     // 速度參數 120~160 (影響時鐘選擇)
-    input wire [1:0] mode,      // 模式選擇
+    input wire [3:0] speed,     // 速度參數 120~160 (影響時鐘選擇)
+    input wire [1:0] mode,      // 模式選擇 模式 1：快速  模式 2：滑動  模式 3：前 8 顆 1Hz，後 8 顆 2Hz
     input clk_1hz,              // 1Hz 時鐘
     input clk_2hz,              // 2Hz 時鐘
     output reg [15:0] LED       // 16 顆 LED 控制(前8顆 15 - 8,後8顆 7 - 0 )
@@ -12,7 +12,7 @@ module LED_Controller(
 
 
     // 時鐘選擇器：speed >= 140 時使用 2Hz，否則使用 1Hz
-    assign clk_div = (speed >= 140) ? clk_2hz : clk_1hz;
+    assign clk_div = (speed >= 4) ? clk_2hz : clk_1hz;
 
     reg [3:0] led_pos; // 當前 LED 位置 (0 ~ 15)
 
