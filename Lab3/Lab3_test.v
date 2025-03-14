@@ -7,6 +7,7 @@ module topModule(
     // input ps2Clk,       // PS2 Clock
     // input ps2Data,      // PS2 Data
     input buttonMode,   // Mode Button
+    input buttonPitch,  // Pitch Button
 
     output [15:0] LED,  // 16 LEDs
     output [6:0] DN0,   // Left 4-digits 7-segment display
@@ -20,10 +21,12 @@ module topModule(
     // wire error, ascii_valid;            // PS2 Keyboard
     wire Clk1kHz;                       // 1kHz Clock
     wire Clk4Hz;                        // 4Hz Clock
+    wire Clk2Hz;                        // 2Hz Clock
+    wire Clk1Hz;                        // 1Hz Clock
     // wire [7:0] asciiOut;                // PS2 ASCII Data Out
     wire [1:0] mode;                    // Mode
     wire [3:0] speedCode;               // Speed Code
-    wire debouncedUp, debouncedDown, debouncedmode;    // Debounced Up Down Button Mode Button
+    wire debouncedUp, debouncedDown, debouncedmode, debouncedpitch;    // Debounced Up Down Button Mode Button
     wire [6:0] DK1, DK2, DK3, DK4;      // DN0 7-segment display signal
     wire [6:0] DK5, DK6, DK7, DK8;      // DN1 7-segment display signal
 
@@ -46,6 +49,24 @@ module topModule(
         .clk_in(clk),
         .rst_n(rstN),
         .clk_out(Clk4Hz)
+    );
+
+    clkDiv #(
+        .TARGET_FREQ(2) // 2Hz
+    )
+        div2Hz (
+        .clk_in(clk),
+        .rst_n(rstN),
+        .clk_out(Clk2Hz)
+    );
+
+    clkDiv #(
+        .TARGET_FREQ(1) // 1Hz
+    )
+        div1Hz (
+        .clk_in(clk),
+        .rst_n(rstN),
+        .clk_out(Clk1Hz)
     );
 
     /*ps2_keyboard ps2Keyboard (
@@ -76,6 +97,13 @@ module topModule(
         .rst(rst),
         .keyIn(buttonMode),
         .keyOut(debouncedmode)
+    );
+
+    keyDebouncing keyDebouncePitch (
+        .clk(clk),
+        .rst(rst),
+        .keyIn(buttonPitch),
+        .keyOut(debouncedpitch)
     );
 
     speedControl speedCtrl (
@@ -129,8 +157,15 @@ module topModule(
         .an(an1)
     );
 
-    // LED
-    assign LED = 16'b1111111111111111; // Only for testing
+    LED_Controller LEDCtrl (
+        .clk(clk),
+        .rst(rst),
+        .speed(speedCode),
+        .mode(mode),
+        .clk_1hz(Clk1Hz),
+        .clk_2hz(Clk2Hz),
+        .LED(LED)
+    );
 
 endmodule
 
