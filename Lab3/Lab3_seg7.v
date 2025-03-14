@@ -66,8 +66,8 @@ module seg7 (
 endmodule
 
 // 訊號解碼區塊
-module ps2HexDisplayforLab3seg7( // 鍵盤訊號轉譯為7-segment顯示訊號
-    input [7:0] ps2Data,
+module modeDisplayForLab3seg7( // 鍵盤訊號轉譯為7-segment顯示訊號
+    input [1:0] mode,
     output reg [6:0] DK1,
     output reg [6:0] DK2,
     output reg [6:0] DK3,
@@ -75,24 +75,24 @@ module ps2HexDisplayforLab3seg7( // 鍵盤訊號轉譯為7-segment顯示訊號
 ); // gfedcba, output single 7-segment digits signal
     
     always @(*) begin
-        case (ps2Data)
-            "f": begin // Fast
+        case (mode)
+            2'b00: begin // Fast
                 DK1 = 7'b1110001;
                 DK2 = 7'b1110111;
                 DK3 = 7'b1101101;
                 DK4 = 7'b1111000;
             end
-            "c": begin// ChUP
-                DK1 = 7'b0111001;
-                DK2 = 7'b1110100;
-                DK3 = 7'b0111110;
-                DK4 = 7'b1110011;
-            end
-            "s": begin // SLID
+            2'b01: begin // SLID
                 DK1 = 7'b1101101;
                 DK2 = 7'b0111000;
                 DK3 = 7'b0000110;
                 DK4 = 7'b1011110;
+            end
+            2'b10: begin// ChUP
+                DK1 = 7'b0111001;
+                DK2 = 7'b1110100;
+                DK3 = 7'b0111110;
+                DK4 = 7'b1110011;
             end
         endcase
     end

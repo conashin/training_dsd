@@ -4,8 +4,9 @@ module topModule(
     input rstN,         // FPGA Reset Button
     input buttonUp,     // Up Button
     input buttonDown,   // Down Button
-    input ps2Clk,       // PS2 Clock
-    input ps2Data,      // PS2 Data
+    // input ps2Clk,       // PS2 Clock
+    // input ps2Data,      // PS2 Data
+    input buttonMode,   // Mode Button
 
     output [15:0] LED,  // 16 LEDs
     output [6:0] DN0,   // Left 4-digits 7-segment display
@@ -16,12 +17,13 @@ module topModule(
 
     // 集線區
     wire rst;
-    wire error, ascii_valid;            // PS2 Keyboard
+    // wire error, ascii_valid;            // PS2 Keyboard
     wire Clk1kHz;                       // 1kHz Clock
-    wire Clk4Hz;                        // 1Hz Clock
-    wire [7:0] asciiOut;                // PS2 ASCII Data Out
+    wire Clk4Hz;                        // 4Hz Clock
+    // wire [7:0] asciiOut;                // PS2 ASCII Data Out
+    wire [1:0] mode;                    // Mode
     wire [3:0] speedCode;               // Speed Code
-    wire debouncedUp, debouncedDown;    // Debounced Up Down Button
+    wire debouncedUp, debouncedDown, debouncedmode;    // Debounced Up Down Button Mode Button
     wire [6:0] DK1, DK2, DK3, DK4;      // DN0 7-segment display signal
     wire [6:0] DK5, DK6, DK7, DK8;      // DN1 7-segment display signal
 
@@ -46,15 +48,14 @@ module topModule(
         .clk_out(Clk4Hz)
     );
 
-    ps2_keyboard ps2Keyboard (
-        .clk(clk),
+    /*ps2_keyboard ps2Keyboard (
         .ps2clk(ps2Clk),
         .ps2data(ps2Data),
         .reset(rst),
         .ascii_out(asciiOut),
         .ascii_valid(ascii_valid),
         .error(error)
-    );
+    );*/
 
     keyDebouncing keyDebounceUp (
         .clk(clk),
@@ -70,6 +71,13 @@ module topModule(
         .keyOut(debouncedDown)
     );
 
+    keyDebouncing keyDebounceMode (
+        .clk(Clk4Hz),
+        .rst(rst),
+        .keyIn(buttonMode),
+        .keyOut(debouncedmode)
+    );
+
     speedControl speedCtrl (
         .up(debouncedUp),
         .down(debouncedDown),
@@ -78,8 +86,15 @@ module topModule(
         .clk(Clk4Hz)
     );
 
-    ps2HexDisplayforLab3seg7 ps2HexDisplay (
-        .ps2Data(asciiOut),
+    modeSW modeSwitch (
+        .clk(Clk4Hz),
+        .rst(rst),
+        .button(debouncedmode),
+        .mode(mode)
+    );
+
+    modeDisplayForLab3seg7 modeDisplay (
+        .mode(mode),
         .DK1(DK1),
         .DK2(DK2),
         .DK3(DK3),
@@ -139,4 +154,31 @@ module speedControl(
     end
 endmodule
 
+module modeSW(
+    input clk,
+    input rst,
+    input button, // S2
+    output reg [1:0] mode
+);
+    localparam FASTBALL = 0, CHANGE_UP = 2, SLIDER = 1;
 
+    reg button_prev;
+    
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            mode <= FASTBALL;
+            button_prev <= 0;
+        end
+        else begin
+            button_prev <= button;
+            if (button && !button_prev) begin // Only change mode on button press (rising edge)
+                case(mode)
+                    FASTBALL:   mode <= SLIDER;
+                    SLIDER:     mode <= CHANGE_UP;
+                    CHANGE_UP:  mode <= FASTBALL;
+                    default:    mode <= FASTBALL;
+                endcase
+            end
+        end
+    end
+endmodule
