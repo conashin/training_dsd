@@ -73,6 +73,7 @@ module LED_Controller(
                 led_pos = led_pos - 1; // 向左移動
         end
     end
+    
 endmodule
 
 module clkDiv #(
