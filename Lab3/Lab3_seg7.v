@@ -76,19 +76,19 @@ module modeDisplayForLab3seg7( // 鍵盤訊號轉譯為7-segment顯示訊號
     
     always @(*) begin
         case (mode)
-            2'b00: begin // Fast
+            2'b01: begin // Fast
                 DK1 = 7'b1110001;
                 DK2 = 7'b1110111;
                 DK3 = 7'b1101101;
                 DK4 = 7'b1111000;
             end
-            2'b01: begin // SLID
+            2'b10: begin // SLID
                 DK1 = 7'b1101101;
                 DK2 = 7'b0111000;
                 DK3 = 7'b0000110;
                 DK4 = 7'b1011110;
             end
-            2'b10: begin// ChUP
+            2'b11: begin// ChUP
                 DK1 = 7'b0111001;
                 DK2 = 7'b1110100;
                 DK3 = 7'b0111110;

@@ -164,7 +164,8 @@ module topModule(
         .mode(mode),
         .clk_1hz(Clk1Hz),
         .clk_2hz(Clk2Hz),
-        .LED(LED)
+        .LED(LED),
+        .pitch(debouncedpitch)
     );
 
 endmodule
@@ -195,7 +196,7 @@ module modeSW(
     input button, // S2
     output reg [1:0] mode
 );
-    localparam FASTBALL = 0, CHANGE_UP = 2, SLIDER = 1;
+    localparam FASTBALL = 1, CHANGE_UP = 3, SLIDER = 2;
 
     reg button_prev;
     
