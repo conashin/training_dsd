@@ -42,14 +42,14 @@ module LED_Controller(
             
             case (mode)
                 2'b01: begin
-                    if (clk_div) LED[led_pos] = 1'b1; // 模式 1：快閃
+                    if (clk_div) LED[led_pos] = 1'b1; // 模式 1：快速
                 end
 
                 2'b10: begin // 模式 2：滑動
                     if (clk_div) begin
                         if (led_pos > 7)
-                            LED[led_pos] = 1'b1; // 前 8 顆亮
-                        else if (led_pos % 2 == 1)
+                            LED[led_pos] = 1'b1; // 前 8 顆正常亮
+                        else if (led_pos % 2 == 1)// 後 8 顆交錯亮
                             LED[led_pos - 1] = 1'b1;
                         else
                             LED[led_pos + 1] = 1'b1;
