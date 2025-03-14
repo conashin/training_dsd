@@ -5,7 +5,7 @@ module LED_Controller(
     input wire [1:0] mode,      // 模式選擇
     input clk_1hz,              // 1Hz 時鐘
     input clk_2hz,              // 2Hz 時鐘
-    output reg [15:0] LED       // 16 顆 LED 控制(前8顆 15 -8,前8顆 7 -0 )
+    output reg [15:0] LED       // 16 顆 LED 控制(前8顆 15 - 8,後8顆 7 - 0 )
 );
     wire clk_div;
 
