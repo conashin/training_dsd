@@ -9,7 +9,7 @@ module topModule(
     input buttonMode,   // Mode Button
     input buttonPitch,  // Pitch Button
 
-    output [15:0] LED,  // 16 LEDs
+    output [15:0] LED,  // 16 LEDs // 0-15 from right to left
     output [6:0] DN0,   // Left 4-digits 7-segment display
     output [6:0] DN1,   // Right 4-digits 7-segment display
     output [3:0] an0,   // Left 7-segment display enable
@@ -157,6 +157,7 @@ module topModule(
         .an(an1)
     );
 
+    /*
     LED_Controller LEDCtrl (
         .clk(clk),
         .rst(rst),
@@ -166,6 +167,15 @@ module topModule(
         .clk_2hz(Clk2Hz),
         .LED(LED),
         .pitch(debouncedpitch)
+    );*/
+
+    LEDCtrl LEDCtrl (
+        .clk(Clk2Hz),
+        .rst(rst),
+        .speedCode(speedCode),
+        .mode(mode),
+        .pitch(debouncedpitch),
+        .LED(LED)
     );
 
 endmodule
