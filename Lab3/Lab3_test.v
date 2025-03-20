@@ -162,8 +162,6 @@ module topModule(
         .rst(rst),
         .speed(speedCode),
         .mode(mode),
-        .clk_1hz(Clk1Hz),
-        .clk_2hz(Clk2Hz),
         .LED(LED),
         .pitch(debouncedpitch)
     );
