@@ -1,30 +1,21 @@
+
 module seg7_display (
-    input clk,              // 系統時脈（100MHz）
-    input rst,              // 同步 reset（高有效）
-    output reg [2:0] Enable, // 3 位顯示器
+    input clk,                  // 系統時脈（100MHz）
+    input rst,                  // 同步 reset（高有效）
+    input [9:0] score,          // 外部輸入分數（0~999）
+    output reg [2:0] Enable,    // 3 位顯示器
     output reg [7:0] SevenSeg
 );
 
     reg [25:0] clkdiv;
     reg [1:0] scan_sel;
 
-    // 降頻產生掃描與更新時脈
+    // 時脈除頻器
     always @(posedge clk) begin
         if (rst)
             clkdiv <= 0;
         else
             clkdiv <= clkdiv + 1;
-    end
-
-    // 3Hz 計數器（0~999）
-    reg [9:0] num;
-    always @(posedge clkdiv[25]||rst) begin
-        if (rst)
-            num <= 0;
-        else if (num == 999)
-            num <= 0;
-        else
-            num <= num + 1;
     end
 
     // 掃描選擇器（快速掃描）
@@ -35,15 +26,15 @@ module seg7_display (
             scan_sel <= (scan_sel == 2'd2) ? 0 : scan_sel + 1;
     end
 
-    // 數字拆解（百十個）
+    // 數字拆解
     reg [3:0] digits[2:0];
     always @(*) begin
-        digits[2] = num / 100;
-        digits[1] = (num / 10) % 10;
-        digits[0] = num % 10;
+        digits[2] = score / 100;
+        digits[1] = (score / 10) % 10;
+        digits[0] = score % 10;
     end
 
-    // 七段譯碼器（gfedcba.dp）共陰極
+    // 七段譯碼器（gfedcba.dp）
     function [7:0] seg_encode;
         input [3:0] digit;
         case (digit)
@@ -61,15 +52,15 @@ module seg7_display (
         endcase
     endfunction
 
-    // 顯示邏輯：reset 時只亮最右邊的 0
+    // 顯示輸出
     always @(*) begin
         if (rst) begin
-            SevenSeg = seg_encode(4'd0);  // 顯示 0
-            Enable = 3'b001;              // 只亮個位
+            SevenSeg = seg_encode(4'd0);
+            Enable = 3'b001;
         end else begin
             SevenSeg = seg_encode(digits[scan_sel]);
             Enable = 3'b000;
-            Enable[scan_sel] = 1'b1;      // 顯示對應位數
+            Enable[scan_sel] = 1'b1;
         end
     end
 
